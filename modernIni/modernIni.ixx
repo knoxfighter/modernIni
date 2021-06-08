@@ -52,13 +52,13 @@ export namespace modernIni {
 	public:
 		Ini() {}
 
-		Ini(std::string new_val) :
+		Ini(const std::string& new_val) :
 			value(new_val), type(Type::Value) { }
 
-		Ini(std::string new_key, std::string new_val) : 
+		Ini(const std::string& new_key, const std::string& new_val) : 
 			key(new_key), value(new_val), type(Type::Value) { }
 
-		Ini(std::string new_key, std::string new_val, Ini* new_parent) :
+		Ini(const std::string& new_key, const std::string& new_val, Ini* new_parent) :
 			key(new_key), value(new_val), type(Type::Value), parent(new_parent) { }
 
 		Ini(std::map<std::string, Ini> new_sub_elements) :
@@ -66,12 +66,12 @@ export namespace modernIni {
 			type = Type::Object;
 		}
 
-		Ini(std::string new_key, std::map<std::string, Ini> new_sub_elements) :
+		Ini(const std::string& new_key, std::map<std::string, Ini> new_sub_elements) :
 			key(new_key), subElements(new_sub_elements) {
 			type = Type::Object;
 		}
 
-		Ini(std::string new_key, std::map<std::string, Ini> new_sub_elements, Ini* new_parent) :
+		Ini(const std::string& new_key, std::map<std::string, Ini> new_sub_elements, Ini* new_parent) :
 			key(new_key), subElements(new_sub_elements), parent(new_parent) {
 			type = Type::Object;
 		}
