@@ -6,10 +6,33 @@ module;
 #include <sstream>
 #include <regex>
 #include <ranges>
+#include <charconv>
+#include <type_traits>
+#include <format>
 
 export module modernIni;
 
 export namespace modernIni {
+	class Ini;
+
+	template<typename T>
+	concept HasFromIni =
+		requires(T& val, const Ini& ini) {
+		from_ini(val, ini);
+	};
+
+	template<typename T>
+	concept HasToIni =
+		requires(const T& val, Ini& ini) {
+		to_ini(val, ini);
+	};
+
+	template<typename T>
+	concept IsFromChars =
+		requires(char* s, T val) {
+		std::from_chars(s, s, val);
+	};
+
 	enum class Type {
 		Object,
 		Value
@@ -53,6 +76,16 @@ export namespace modernIni {
 			type = Type::Object;
 		}
 
+		template<HasToIni T>
+		Ini(const T& val) {
+			this->operator=(val);
+		}
+		template<typename T>
+		requires std::is_integral_v<T> || std::is_floating_point_v<T>
+		Ini(const T& val) {
+			this->operator=(val);
+		}
+
 		bool hasValueElements() const {
 			if (type == Type::Value)
 				return false;
@@ -64,6 +97,21 @@ export namespace modernIni {
 			}
 
 			return false;
+		}
+
+		inline bool isObject() const {
+			return type == Type::Object;
+		}
+
+		inline bool isValue() const {
+			return type == Type::Value;
+		}
+
+		bool has(const std::string& key) const {
+			if (!isObject()) {
+				return false;
+			}
+			return subElements.contains(key);
 		}
 
 		/**
@@ -81,12 +129,82 @@ export namespace modernIni {
 			return ss.str();
 		}
 
-		Ini& operator[](const std::string& l) {
+		template<HasFromIni T>
+		void get_to(T& val) const {
+			if (!isObject()) return;
+			from_ini(val, *this);
+		}
+
+		template<IsFromChars T>
+		void get_to(T& val) const {
+			if (!isValue()) return;
+			std::from_chars(value.data(), value.data() + value.size(), val);
+		}
+
+		void get_to(std::string& val) const {
+			if (!isValue()) return;
+			val = value;
+		}
+
+		void get_to(bool& val) const {
+			if (!isValue()) return;
+			std::string lowerVal = value;
+			std::transform(lowerVal.begin(), lowerVal.end(), lowerVal.begin(), [](auto& c) {
+				return std::tolower(c);
+			});
+			if (lowerVal == "true" || lowerVal == "on" || lowerVal == "1") {
+				val = true;
+			} else if (lowerVal == "false" || lowerVal == "off" || lowerVal == "0") {
+				val = false;
+			}
+		}
+
+		template<typename T>
+		T get() const {
+			T val = {};
+			get_to(val);
+			return std::move(val);
+		}
+
+		Ini& at(const std::string& key) {
+			if (!isObject()) {
+				throw std::out_of_range("Calle `at()` on non-object");
+			}
+
+			return subElements.at(key);
+		}
+		const Ini& at(const std::string& key) const {
+			if (!isObject()) {
+				throw std::out_of_range("Called `at()` on non-object");
+			}
+
+			return subElements.at(key);
+		}
+
+		Ini& operator[](const std::string& key) {
 			type = Type::Object;
-			Ini& element = subElements[l];
+			Ini& element = subElements[key];
 			element.parent = this;
-			element.key = l;
+			element.key = key;
 			return element;
+		}
+
+		template<HasToIni T>
+		void operator=(const T& val) {
+			type = Type::Object;
+			to_ini(val, *this);
+		}
+
+		template<typename T>
+		requires std::is_integral_v<T> || std::is_floating_point_v<T>
+		void operator=(const T& val) {
+			type = Type::Value;
+			value = std::format("{}", val);
+		}
+
+		void operator=(const std::string& val) {
+			type = Type::Value;
+			value = val;
 		}
 
 		bool operator==(const Ini& other) const {
