@@ -125,6 +125,40 @@ e=tätärä
 		test(ini, "e", "tätärä"s);
 	}
 
+	TEST(getTests, Bool) {
+		std::string iniString = R"(
+a=true
+b=TRUE
+c=True
+d=on
+e=1
+q=false
+r=FALSE
+s=False
+t=off
+u=0
+x=invalid
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+
+		test(ini, "a", true);
+		test(ini, "b", true);
+		test(ini, "c", true);
+		test(ini, "d", true);
+		test(ini, "e", true);
+		test(ini, "q", false);
+		test(ini, "r", false);
+		test(ini, "s", false);
+		test(ini, "t", false);
+		test(ini, "u", false);
+		test(ini, "x", false);
+	}
+
 	struct object {
 		std::string a;
 		float b;

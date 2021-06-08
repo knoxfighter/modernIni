@@ -37,6 +37,16 @@ namespace {
 		test(t, ini);
 	}
 
+	TEST(ConstructTests, boolean) {
+		Ini ini("true");
+		bool t = true;
+		test(t, ini);
+
+		Ini ini2("false");
+		bool t2 = false;
+		test(t2, ini2);
+	}
+
 	struct object {
 		std::string a;
 		float b;
