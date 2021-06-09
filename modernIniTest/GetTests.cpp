@@ -125,7 +125,7 @@ e=tätärä
 		test(ini, "e", "tätärä"s);
 	}
 
-	TEST(getTests, Bool) {
+	TEST(getTests, boolean) {
 		std::string iniString = R"(
 a=true
 b=TRUE
@@ -157,6 +157,66 @@ x=invalid
 		test(ini, "t", false);
 		test(ini, "u", false);
 		test(ini, "x", false);
+	}
+
+	TEST(getTests, enumNum) {
+		std::string iniString = R"(
+a=0
+b=5
+c=3
+x=invalid
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+
+		enum class EnumTest {
+			T0,
+			T1,
+			T2,
+			T3,
+			T4,
+			T5
+		};
+
+		test(ini, "a", EnumTest::T0);
+		test(ini, "b", EnumTest::T5);
+		test(ini, "c", EnumTest::T3);
+		test(ini, "x", EnumTest::T0);
+	}
+
+	enum class EnumTest2 {
+		T0,
+		T1,
+		T2,
+		T3,
+		T4,
+		T5
+	};
+
+	MODERN_INI_SERIALIZE_ENUM(EnumTest2, T0, T1, T2, T3, T4, T5)
+
+	TEST(getTests, enumName) {
+		std::string iniString = R"(
+a=T0
+b=T5
+c=T3
+x=invalid
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+
+		test(ini, "a", EnumTest2::T0);
+		test(ini, "b", EnumTest2::T5);
+		test(ini, "c", EnumTest2::T3);
+		test(ini, "x", EnumTest2::T0);
 	}
 
 	struct object {

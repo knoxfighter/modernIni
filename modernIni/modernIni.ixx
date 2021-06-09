@@ -22,10 +22,16 @@ export namespace modernIni {
 	};
 
 	template<typename T>
+	concept EnumHasNoFromIni = std::is_enum_v<T> && !HasFromIni<T>;
+
+	template<typename T>
 	concept HasToIni =
 		requires(const T& val, Ini& ini) {
 		to_ini(val, ini);
 	};
+
+	template<typename T>
+	concept EnumHasNoToIni = std::is_enum_v<T> && !HasToIni<T>;
 
 	template<typename T>
 	concept IsFromChars =
@@ -76,12 +82,8 @@ export namespace modernIni {
 			type = Type::Object;
 		}
 
-		template<HasToIni T>
-		Ini(const T& val) {
-			this->operator=(val);
-		}
 		template<typename T>
-		requires std::is_integral_v<T> || std::is_floating_point_v<T>
+		requires std::is_integral_v<T> || std::is_floating_point_v<T> || HasToIni<T> || EnumHasNoToIni<T>
 		Ini(const T& val) {
 			this->operator=(val);
 		}
@@ -131,7 +133,6 @@ export namespace modernIni {
 
 		template<HasFromIni T>
 		void get_to(T& val) const {
-			if (!isObject()) return;
 			from_ini(val, *this);
 		}
 
@@ -139,6 +140,14 @@ export namespace modernIni {
 		void get_to(T& val) const {
 			if (!isValue()) return;
 			std::from_chars(value.data(), value.data() + value.size(), val);
+		}
+
+		template<EnumHasNoFromIni T>
+		void get_to(T& val) const {
+			if (!isValue()) return;
+			std::underlying_type_t<T> numVal = 0;
+			get_to(numVal);
+			val = static_cast<T>(numVal);
 		}
 
 		void get_to(std::string& val) const {
@@ -200,6 +209,12 @@ export namespace modernIni {
 		void operator=(const T& val) {
 			type = Type::Value;
 			value = std::format("{}", val);
+		}
+
+		template<EnumHasNoToIni T>
+		void operator=(const T& val) {
+			auto newVal = static_cast<std::underlying_type_t<T>>(val);
+			this->operator=(newVal);
 		}
 
 		void operator=(const std::string& val) {

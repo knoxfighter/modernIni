@@ -48,6 +48,30 @@ namespace {
 		test(t2, ini2);
 	}
 
+	TEST(EqualOpTests, enumNum) {
+		enum class EnumTest {
+			T0,
+			T1
+		};
+
+		Ini iniTest("1");
+
+		test(EnumTest::T1, iniTest);
+	}
+
+	enum class EnumTest2 {
+		T0,
+		T1
+	};
+
+	MODERN_INI_SERIALIZE_ENUM(EnumTest2, T0, T1)
+	
+	TEST(EqualOpTests, enumName) {
+		Ini iniTest("T1");
+
+		test(EnumTest2::T1, iniTest);
+	}
+
 	struct object {
 		std::string a;
 		float b;

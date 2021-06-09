@@ -15,11 +15,11 @@ typedef std::map<std::string, Ini> IniMap;
 namespace {
 
 	template <typename T>
-	void test(Ini& ini, std::string key, T checkVal, T defaultVal = 0) {
+	void test(Ini& ini, std::string key, T checkVal, T defaultVal = {}) {
 		T val = defaultVal;
 		ini.at(key).get_to(val);
 		ASSERT_EQ(val, checkVal) << " failed with key: " << key;
-	};
+	}
 
 	TEST(getToTests, Nums) {
 		std::string iniString = R"(
@@ -119,7 +119,7 @@ e=tätärä
 		test(ini, "e", "tätärä"s, ""s);
 	}
 
-	TEST(getToTests, Bool) {
+	TEST(getToTests, boolean) {
 		std::string iniString = R"(
 a=true
 b=TRUE
@@ -152,6 +152,66 @@ x=invalid
 		test(ini, "u", false);
 		test(ini, "x", false, false);
 		test(ini, "x", true, true);
+	}
+
+	TEST(getToTests, enumNum) {
+		std::string iniString = R"(
+a=0
+b=5
+c=3
+x=invalid
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+
+		enum class EnumTest {
+			T0,
+			T1,
+			T2,
+			T3,
+			T4,
+			T5
+		};
+
+		test(ini, "a", EnumTest::T0);
+		test(ini, "b", EnumTest::T5);
+		test(ini, "c", EnumTest::T3);
+		test(ini, "x", EnumTest::T0, EnumTest::T0);
+	}
+
+	enum class EnumTest2 {
+		T0,
+		T1,
+		T2,
+		T3,
+		T4,
+		T5
+	};
+
+	MODERN_INI_SERIALIZE_ENUM(EnumTest2, T0, T1, T2, T3, T4, T5)
+	
+	TEST(getToTests, enumName) {
+		std::string iniString = R"(
+a=T0
+b=T5
+c=T3
+x=invalid
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+
+		test(ini, "a", EnumTest2::T0);
+		test(ini, "b", EnumTest2::T5);
+		test(ini, "c", EnumTest2::T3);
+		test(ini, "x", EnumTest2::T0, EnumTest2::T0);
 	}
 
 	struct object {
