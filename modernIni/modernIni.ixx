@@ -274,6 +274,9 @@ export namespace modernIni {
 				size_t splitPos = line.find('=');
 				std::string key = line.substr(0, splitPos);
 				std::string value = line.substr(splitPos + 1);
+				// strip spaces (leading/trailing)
+				key = std::regex_replace(key, std::regex("^ +| +$|( ) +"), "$1");
+				value = std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
 				lastCategory->subElements.try_emplace(key, key, value, lastCategory);
 			}
 		}

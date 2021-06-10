@@ -68,6 +68,21 @@ namespace {
 		ASSERT_EQ(ini, testFileIni);
 	}
 
+	TEST(modernIni, basicReadSpaces) {
+		auto b = std::filesystem::current_path();
+		b.append("testSpaces.ini");
+		std::ifstream stream(b);
+		if (!stream.is_open()) {
+			FAIL() << "testSpaces.ini not opened";
+		}
+
+		Ini ini;
+
+		stream >> ini;
+
+		ASSERT_EQ(ini, testFileIni);
+	}
+
 	TEST(modernIni, basicWrite) {
 		auto inFile = std::filesystem::current_path();
 		inFile.append("test.ini");
