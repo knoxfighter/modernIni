@@ -16,10 +16,10 @@ import modernIni;
 	}
 
 #define MODERN_INI_DEFINE_TYPE_NON_INTRUSIVE(Type, ...) \
-	void from_ini(Type& obj, const modernIni::Ini& ini) { \
+	inline void from_ini(Type& obj, const modernIni::Ini& ini) { \
 		MAP(MODERN_INI_GET_TO_SINGLE_THROWING, __VA_ARGS__) \
 	} \
-	void to_ini(const Type& obj, modernIni::Ini& ini) { \
+	inline void to_ini(const Type& obj, modernIni::Ini& ini) { \
 		MAP(MODERN_INI_ASSIGN_SINGLE, __VA_ARGS__) \
 	}
 
@@ -34,10 +34,10 @@ import modernIni;
 	}
 
 #define MODERN_INI_DEFINE_TYPE_NON_INTRUSIVE_NO_EXCEPT(Type, ...) \
-	void from_ini(Type& obj, const modernIni::Ini& ini) noexcept { \
+	inline void from_ini(Type& obj, const modernIni::Ini& ini) noexcept { \
 		MAP(MODERN_INI_GET_TO_SINGLE_NO_EXCEPT, __VA_ARGS__) \
 	} \
-	void to_ini(const Type& obj, modernIni::Ini& ini) { \
+	inline void to_ini(const Type& obj, modernIni::Ini& ini) { \
 		MAP(MODERN_INI_ASSIGN_SINGLE, __VA_ARGS__) \
 	}
 
@@ -46,7 +46,7 @@ import modernIni;
 #define MODERN_INI_SERIALIZE_ENUM_SINGLE_TO(value, key) {key::value, #value}
 #define MODERN_INI_SERIALIZE_ENUM(ENUM_TYPE, ...) \
 	static_assert(std::is_enum_v<ENUM_TYPE>, #ENUM_TYPE " must be an enum!"); \
-	void from_ini(ENUM_TYPE& e, const modernIni::Ini& ini) { \
+	inline void from_ini(ENUM_TYPE& e, const modernIni::Ini& ini) { \
 		std::map<std::string, ENUM_TYPE> enumIniLookup{ \
 			MAP_LIST_UD(MODERN_INI_SERIALIZE_ENUM_SINGLE_FROM, ENUM_TYPE, __VA_ARGS__) \
 		}; \
@@ -55,7 +55,7 @@ import modernIni;
 			e = found->second; \
 		} \
 	} \
-	void to_ini(const ENUM_TYPE& e, modernIni::Ini& ini) { \
+	inline void to_ini(const ENUM_TYPE& e, modernIni::Ini& ini) { \
 		std::map<ENUM_TYPE, std::string> enumIniLookup{ \
 			MAP_LIST_UD(MODERN_INI_SERIALIZE_ENUM_SINGLE_TO, ENUM_TYPE, __VA_ARGS__) \
 		}; \
