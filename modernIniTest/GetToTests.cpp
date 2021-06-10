@@ -633,4 +633,15 @@ y=12.385
 
 		ASSERT_EQ(obj, objTest);
 	}
+
+	TEST(getToTests, Optional) {
+		std::optional<std::string> t;
+		std::optional<std::string> t2 = "test";
+		
+		Ini ini = "test"s;
+
+		ini.get_to(t);
+
+		ASSERT_EQ(t, t2);
+	}
 }

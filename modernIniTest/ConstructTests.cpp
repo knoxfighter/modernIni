@@ -1,11 +1,16 @@
 #include "pch.h"
 
+#include <optional>
+#include <string>
+
 #include "../modernIni/modernIniMacros.h"
 
 import modernIni;
 
 typedef modernIni::Ini Ini;
 typedef std::map<std::string, Ini> IniMap;
+
+using std::literals::string_literals::operator""s;
 
 namespace {
 	template <typename T>
@@ -272,6 +277,40 @@ namespace {
 
 		Ini ini;
 
+		ini = obj;
+
+		ASSERT_EQ(ini, iniTest);
+	}
+
+	TEST(ConstructTests, Optional) {
+		Ini iniTest("test"s);
+
+		std::optional<std::string> t = "test";
+
+		Ini ini;
+
+		ini = t;
+
+		ASSERT_EQ(ini, iniTest);
+	}
+
+	struct optionalTest {
+		std::optional<std::string> s1;
+		std::optional<std::string> s2 = "huhu";
+
+		MODERN_INI_DEFINE_TYPE_INTRUSIVE_NO_EXCEPT(optionalTest, s1, s2)
+	};
+
+	TEST(ConstructTests, OptionalInStruct) {
+		Ini iniTest{
+			IniMap {
+				{"s2", Ini("s2", "huhu")}
+			}
+		};
+
+		optionalTest obj;
+
+		Ini ini;
 		ini = obj;
 
 		ASSERT_EQ(ini, iniTest);

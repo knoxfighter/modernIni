@@ -9,6 +9,7 @@ module;
 #include <charconv>
 #include <type_traits>
 #include <format>
+#include <optional>
 
 export module modernIni;
 
@@ -150,6 +151,11 @@ export namespace modernIni {
 			val = static_cast<T>(numVal);
 		}
 
+		template<typename T>
+		void get_to(std::optional<T>& val) const {
+			val = get<T>();
+		}
+
 		void get_to(std::string& val) const {
 			if (!isValue()) return;
 			val = value;
@@ -175,9 +181,17 @@ export namespace modernIni {
 			return std::move(val);
 		}
 
+		void erase(const std::string& key) {
+			if (!isObject()) {
+				throw std::out_of_range("Called `erase()` on non-object");
+			}
+
+			subElements.erase(key);
+		}
+
 		Ini& at(const std::string& key) {
 			if (!isObject()) {
-				throw std::out_of_range("Calle `at()` on non-object");
+				throw std::out_of_range("Called `at()` on non-object");
 			}
 
 			return subElements.at(key);
@@ -215,6 +229,18 @@ export namespace modernIni {
 		void operator=(const T& val) {
 			auto newVal = static_cast<std::underlying_type_t<T>>(val);
 			this->operator=(newVal);
+		}
+
+		template<typename T>
+		void operator=(const std::optional<T>& val) {
+			if (val) {
+				this->operator=(val.value());
+			} else {
+				// remove this from parent, if parent exists
+				if (parent) {
+					parent->erase(key);
+				}
+			}
 		}
 
 		void operator=(const std::string& val) {
@@ -314,5 +340,31 @@ export namespace modernIni {
 			break;
 		}
 		return output;
+	}
+
+	// C++ default containers
+
+	// std::array
+	template<typename T, size_t Size>
+	void from_ini(std::array<T, Size>& obj, const Ini& ini) {
+		if (!ini.isObject()) {
+			return;
+		}
+		for (size_t i = 0; i < Size; ++i) {
+			std::string key = std::to_string(i);
+			if (!ini.has(key)) {
+				continue;
+			}
+
+			T& val = obj[i];
+			ini.at(key).get_to(val);
+		}
+	}
+	template<typename T, size_t Size>
+	void to_ini(const std::array<T, Size>& obj, Ini& ini) {
+		for (size_t i = 0; i < Size; ++i) {
+			std::string key = std::to_string(i);
+			ini[key] = obj[i];
+		}
 	}
 };

@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConstructTests.cpp" />
+    <ClCompile Include="DefaultContainerTests.cpp" />
     <ClCompile Include="EqualOpTest.cpp" />
     <ClCompile Include="GeneralTests.cpp" />
     <ClCompile Include="GetTests.cpp" />
