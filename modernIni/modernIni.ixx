@@ -278,13 +278,22 @@ export namespace modernIni {
 
 		while (!input.eof()) {
 			std::string line;
-			std::getline(input, line);
 
-			if (line.empty()) {
+			if (!std::getline(input, line) || line.empty()) {
 				//continue;
 				continue;
 			}
-			else if (line.starts_with('[')) {
+			else if (line.find('=') != std::string::npos) {
+				// key=value pair or empty
+				size_t splitPos = line.find('=');
+				std::string key = line.substr(0, splitPos);
+				std::string value = line.substr(splitPos + 1);
+				// strip spaces (leading/trailing)
+				key = std::regex_replace(key, std::regex("^ +| +$|( ) +"), "$1");
+				value = std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
+				lastCategory->subElements.try_emplace(key, key, value, lastCategory);
+			}
+			else if (line.find('[') != std::string::npos) {
 				lastCategory = &ini;
 				// this is a category
 				std::regex reg("\\[([^\\[\\]]+?)\\]");
@@ -296,16 +305,6 @@ export namespace modernIni {
 					lastCategory->type = Type::Object;
 					next++;
 				}
-			}
-			else {
-				// key=value pair or empty
-				size_t splitPos = line.find('=');
-				std::string key = line.substr(0, splitPos);
-				std::string value = line.substr(splitPos + 1);
-				// strip spaces (leading/trailing)
-				key = std::regex_replace(key, std::regex("^ +| +$|( ) +"), "$1");
-				value = std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
-				lastCategory->subElements.try_emplace(key, key, value, lastCategory);
 			}
 		}
 
