@@ -66,6 +66,8 @@
 
 #define MAP0_UD(f, userdata, x, peek, ...) f(x,userdata) DEFER ( MAP_NEXT(peek, MAP1_UD) ) ( f, userdata, peek, __VA_ARGS__ ) 
 #define MAP1_UD(f, userdata, x, peek, ...) f(x,userdata) DEFER ( MAP_NEXT(peek, MAP0_UD) ) ( f, userdata, peek, __VA_ARGS__ ) 
+#define MAP0_UD2(f, userdata, x, y, peek, ...) f(x,y,userdata) DEFER ( MAP_NEXT(peek, MAP1_UD2) ) ( f, userdata, peek, __VA_ARGS__ ) 
+#define MAP1_UD2(f, userdata, x, y, peek, ...) f(x,y,userdata) DEFER ( MAP_NEXT(peek, MAP0_UD2) ) ( f, userdata, peek, __VA_ARGS__ ) 
 
 #define MAP0_UD_I(f, userdata, index, x, peek, ...) f(x,userdata,index) DEFER ( MAP_NEXT(peek, MAP1_UD_I) ) ( f, userdata, MAP_INC(index), peek, __VA_ARGS__ ) 
 #define MAP1_UD_I(f, userdata, index, x, peek, ...) f(x,userdata,index) DEFER ( MAP_NEXT(peek, MAP0_UD_I) ) ( f, userdata, MAP_INC(index), peek, __VA_ARGS__ ) 
@@ -103,6 +105,7 @@
  * e.g. MAP_UD(f, x, a, b, c) evaluates to f(a, x) f(b, x) f(c, x)
  */
 #define MAP_UD(f, userdata, ...) EVAL(MAP1_UD(f, userdata, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
+#define MAP_UD2(f, userdata, ...) EVAL(MAP1_UD2(f, userdata, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
 
 /**
  * Applies the function macro `f` to each of the remaining parameters, inserts commas between the results,
