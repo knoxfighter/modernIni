@@ -48,6 +48,8 @@ export namespace modernIni {
 	class Ini {
 		friend std::istream& operator>>(std::istream& input, Ini& ini);
 		friend std::ostream& operator<<(std::ostream& output, const Ini& ini);
+		template<typename Key, typename Val>
+		friend void from_ini(std::map<Key, Val>& obj, const Ini& ini);
 
 	private:
 		Type type = Type::Value;
@@ -365,6 +367,33 @@ export namespace modernIni {
 		for (size_t i = 0; i < Size; ++i) {
 			std::string key = std::to_string(i);
 			ini[key] = obj[i];
+		}
+	}
+
+	// std::map
+	// This implementation is not good :(
+	template<typename Key, typename Val>
+	void from_ini(std::map<Key, Val>& obj, const Ini& ini) {
+		if (!ini.isObject()) {
+			return;
+		}
+
+		for (auto& subElement : ini.subElements) {
+			const std::string& key = subElement.first;
+			Ini temp(key);
+			Key realKey = temp.get<Key>();
+			Val& val = obj[realKey];
+			const Ini& subIni = subElement.second;
+			subIni.get_to(val);
+		}
+	}
+	template<typename Key, typename Val>
+	void to_ini(const std::map<Key, Val>& obj, Ini& ini) {
+		for (const auto& val : obj) {
+			const Key key = val.first;
+			Ini iniTemp(key);
+			std::string iniKey = iniTemp.get<std::string>();
+			ini[iniKey] = val.second;
 		}
 	}
 };
