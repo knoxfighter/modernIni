@@ -44,6 +44,7 @@ import modernIni;
 
 #define MODERN_INI_SERIALIZE_ENUM_SINGLE_FROM(value, key) {#value, key::value}
 #define MODERN_INI_SERIALIZE_ENUM_SINGLE_TO(value, key) {key::value, #value}
+#define MODERN_INI_SERIALIZE_ENUM_SWITCH(value, key) case key::value: return #value;
 #define MODERN_INI_SERIALIZE_ENUM(ENUM_TYPE, ...) \
 	static_assert(std::is_enum_v<ENUM_TYPE>, #ENUM_TYPE " must be an enum!"); \
 	inline void from_ini(ENUM_TYPE& e, const modernIni::Ini& ini) { \
@@ -62,5 +63,10 @@ import modernIni;
 		auto found = enumIniLookup.find(e); \
 		if (found != enumIniLookup.end()) { \
 			ini = found->second; \
+		} \
+	} \
+	inline std::string to_string(ENUM_TYPE e) { \
+		switch (e) { \
+			MAP_UD(MODERN_INI_SERIALIZE_ENUM_SWITCH, ENUM_TYPE, __VA_ARGS__) \
 		} \
 	}
