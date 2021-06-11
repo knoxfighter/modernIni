@@ -64,7 +64,8 @@ import modernIni;
 		if (found != enumIniLookup.end()) { \
 			ini = found->second; \
 		} \
-	} \
+	}
+#define MODERN_INI_SERIALIZE_ENUM_TO_STRING(ENUM_TYPE, ...) \
 	inline std::string to_string(ENUM_TYPE e) { \
 		switch (e) { \
 			MAP_UD(MODERN_INI_SERIALIZE_ENUM_SWITCH, ENUM_TYPE, __VA_ARGS__) \
