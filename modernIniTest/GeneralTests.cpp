@@ -15,7 +15,7 @@ namespace {
 	Ini testFileIni{
 		IniMap{
 			{"test1", Ini("test1", "baumhaus")},
-			{"test2", Ini("test2", "hausbaum")},
+			{"test2", Ini("test2", "haus\nbaum")},
 			{
 				"cat1", Ini("cat1", IniMap{
 								{"test1", Ini("test1", "kuckuck")},

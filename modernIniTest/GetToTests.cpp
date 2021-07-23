@@ -119,6 +119,19 @@ e=tätärä
 		test(ini, "e", "tätärä"s, ""s);
 	}
 
+	TEST(getToTests, StringNewLine) {
+		std::string iniString = R"(
+e=tä\ntärä
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+		test(ini, "e", "tä\ntärä"s, ""s);
+	}
+
 	TEST(getToTests, boolean) {
 		std::string iniString = R"(
 a=true

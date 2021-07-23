@@ -1,5 +1,5 @@
 /**
- * This file is a copy of getTests!
+ * This file is a copy of getToTests!
  * Only thing changed here, is the funtion called (`get` instead of `get_to`)
  * Make sure, the two testfiles have the same tests.
  *
@@ -123,6 +123,19 @@ e=tätärä
 		test(ini, "c", "-10"s);
 		test(ini, "d", "-5.1"s);
 		test(ini, "e", "tätärä"s);
+	}
+
+	TEST(getToTests, StringNewLine) {
+		std::string iniString = R"(
+e=tä\ntärä
+	)";
+
+		std::istringstream iniStream(iniString);
+
+		Ini ini;
+
+		iniStream >> ini;
+		test(ini, "e", "tä\ntärä"s);
 	}
 
 	TEST(getTests, boolean) {

@@ -291,6 +291,25 @@ export namespace modernIni {
 				// strip spaces (leading/trailing)
 				key = std::regex_replace(key, std::regex("^ +| +$|( ) +"), "$1");
 				value = std::regex_replace(value, std::regex("^ +| +$|( ) +"), "$1");
+
+				std::stringstream ss;
+				bool decodeNext = false;
+				for (auto letter : value) {
+					if (decodeNext) {
+						decodeNext = false;
+						if (letter == '\\') {
+							ss << letter;
+						} else if (letter == 'n') {
+							ss << '\n';
+						}
+					} else if (letter == '\\') {
+						decodeNext = true;
+					} else {
+						ss << letter;
+					}
+				}
+				value = ss.str();
+
 				lastCategory->subElements.try_emplace(key, key, value, lastCategory);
 			}
 			else if (line.find('[') != std::string::npos) {
@@ -334,9 +353,21 @@ export namespace modernIni {
 				}
 			}
 			break;
-		case Type::Value:
-			output << ini.key << "=" << ini.value << std::endl;
+		case Type::Value: {
+			std::string value = ini.value;
+			std::stringstream ss;
+			for (auto letter : value) {
+				if (letter == '\n') {
+					ss << '\\' << 'n';
+				} else if (letter == '\\') {
+					ss << '\\' << '\\';
+				} else {
+					ss << letter;
+				}
+			}
+			output << ini.key << "=" << ss.str() << std::endl;
 			break;
+		}
 		default:
 			break;
 		}
