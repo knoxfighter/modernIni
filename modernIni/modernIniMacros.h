@@ -1,6 +1,6 @@
 #pragma once
 
-import modernIni;
+#include "modernIni.h"
 
 #include "map.h"
 

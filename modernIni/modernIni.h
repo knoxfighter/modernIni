@@ -1,0 +1,236 @@
+#pragma once
+
+#include <iostream>
+#include <map>
+#include <string>
+#include <sstream>
+#include <regex>
+#include <ranges>
+#include <charconv>
+#include <type_traits>
+#include <format>
+#include <optional>
+
+namespace modernIni {
+	class Ini;
+
+	template<typename T>
+	concept HasFromIni =
+		requires(T& val, const Ini& ini) {
+		from_ini(val, ini);
+	};
+
+	template<typename T>
+	concept EnumHasNoFromIni = std::is_enum_v<T> && !HasFromIni<T>;
+
+	template<typename T>
+	concept HasToIni =
+		requires(const T& val, Ini& ini) {
+		to_ini(val, ini);
+	};
+
+	template<typename T>
+	concept EnumHasNoToIni = std::is_enum_v<T> && !HasToIni<T>;
+
+	template<typename T>
+	concept IsFromChars =
+		requires(char* s, T val) {
+		std::from_chars(s, s, val);
+	};
+
+	enum class Type {
+		Object,
+		Value
+	};
+
+	class Ini {
+		friend std::istream& operator>>(std::istream& input, Ini& ini);
+		friend std::ostream& operator<<(std::ostream& output, const Ini& ini);
+		template<typename Key, typename Val>
+		friend void from_ini(std::map<Key, Val>& obj, const Ini& ini);
+
+	private:
+		Type type = Type::Value;
+		std::string value;
+		std::string key;
+		std::map<std::string, Ini> subElements;
+		Ini* parent = nullptr;
+
+	public:
+		Ini() {}
+
+		Ini(const std::string& new_val) :
+			value(new_val), type(Type::Value) { }
+
+		Ini(const std::string& new_key, const std::string& new_val) : 
+			key(new_key), value(new_val), type(Type::Value) { }
+
+		Ini(const std::string& new_key, const std::string& new_val, Ini* new_parent) :
+			key(new_key), value(new_val), type(Type::Value), parent(new_parent) { }
+
+		Ini(std::map<std::string, Ini> new_sub_elements) :
+			subElements(new_sub_elements), type(Type::Object) { }
+
+		Ini(const std::string& new_key, std::map<std::string, Ini> new_sub_elements) :
+			key(new_key), subElements(new_sub_elements), type(Type::Object) { }
+
+		Ini(const std::string& new_key, std::map<std::string, Ini> new_sub_elements, Ini* new_parent) :
+			key(new_key), subElements(new_sub_elements), parent(new_parent), type(Type::Object) { }
+
+		template<typename T>
+		requires std::is_integral_v<T> || std::is_floating_point_v<T> || HasToIni<T> || EnumHasNoToIni<T>
+		Ini(const T& val) {
+			this->operator=(val);
+		}
+
+		bool hasValueElements() const;
+
+		bool isObject() const;
+
+		bool isValue() const;
+
+		bool has(const std::string& key) const;
+
+		/**
+		 * This produces a string in the ini file category format. e.g. `[cat][subcat][subsubcat]`
+		 */
+		std::string getCategories() const;
+
+		template<HasFromIni T>
+		void get_to(T& val) const {
+			from_ini(val, *this);
+		}
+
+		template<IsFromChars T>
+		void get_to(T& val) const {
+			if (!isValue()) return;
+			std::from_chars(value.data(), value.data() + value.size(), val);
+		}
+
+		template<EnumHasNoFromIni T>
+		void get_to(T& val) const {
+			if (!isValue()) return;
+			std::underlying_type_t<T> numVal = 0;
+			get_to(numVal);
+			val = static_cast<T>(numVal);
+		}
+
+		template<typename T>
+		void get_to(std::optional<T>& val) const {
+			val = get<T>();
+		}
+
+		void get_to(std::string& val) const;
+
+		void get_to(bool& val) const;
+
+		template<typename T>
+		T get() const {
+			T val = {};
+			get_to(val);
+			return std::move(val);
+		}
+
+		void erase(const std::string& key);
+
+		Ini& at(const std::string& key);
+
+		const Ini& at(const std::string& key) const;
+
+		Ini& operator[](const std::string& key);
+
+		template<HasToIni T>
+		void operator=(const T& val) {
+			type = Type::Object;
+			to_ini(val, *this);
+		}
+
+		template<typename T>
+		requires std::is_integral_v<T> || std::is_floating_point_v<T>
+		void operator=(const T& val) {
+			type = Type::Value;
+			value = std::to_string(val);
+		}
+
+		template<EnumHasNoToIni T>
+		void operator=(const T& val) {
+			auto newVal = static_cast<std::underlying_type_t<T>>(val);
+			this->operator=(newVal);
+		}
+
+		template<typename T>
+		void operator=(const std::optional<T>& val) {
+			if (val) {
+				this->operator=(val.value());
+			} else {
+				// remove this from parent, if parent exists
+				if (parent) {
+					parent->erase(key);
+				}
+			}
+		}
+
+		void operator=(const std::string& val);
+
+		bool operator==(const Ini& other) const;
+	};
+
+	// deserialize from stream
+	std::istream& operator>>(std::istream& input, Ini& ini);
+
+	// serialize to stream
+	std::ostream& operator<<(std::ostream& output, const Ini& ini);
+
+	// C++ default containers
+
+	// std::array
+	template<typename T, size_t Size>
+	void from_ini(std::array<T, Size>& obj, const Ini& ini) {
+		if (!ini.isObject()) {
+			return;
+		}
+		for (size_t i = 0; i < Size; ++i) {
+			std::string key = std::to_string(i);
+			if (!ini.has(key)) {
+				continue;
+			}
+
+			T& val = obj[i];
+			ini.at(key).get_to(val);
+		}
+	}
+	template<typename T, size_t Size>
+	void to_ini(const std::array<T, Size>& obj, Ini& ini) {
+		for (size_t i = 0; i < Size; ++i) {
+			std::string key = std::to_string(i);
+			ini[key] = obj[i];
+		}
+	}
+
+	// std::map
+	// This implementation is not good :(
+	template<typename Key, typename Val>
+	void from_ini(std::map<Key, Val>& obj, const Ini& ini) {
+		if (!ini.isObject()) {
+			return;
+		}
+
+		for (auto& subElement : ini.subElements) {
+			const std::string& key = subElement.first;
+			Ini temp(key);
+			Key realKey = temp.get<Key>();
+			Val& val = obj[realKey];
+			const Ini& subIni = subElement.second;
+			subIni.get_to(val);
+		}
+	}
+	template<typename Key, typename Val>
+	void to_ini(const std::map<Key, Val>& obj, Ini& ini) {
+		for (const auto& val : obj) {
+			const Key key = val.first;
+			Ini iniTemp(key);
+			std::string iniKey = iniTemp.get<std::string>();
+			ini[iniKey] = val.second;
+		}
+	}
+};

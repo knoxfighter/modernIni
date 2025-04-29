@@ -13,6 +13,8 @@ module;
 
 export module modernIni;
 
+// import std;
+
 export namespace modernIni {
 	class Ini;
 
@@ -166,7 +168,7 @@ export namespace modernIni {
 		void get_to(bool& val) const {
 			if (!isValue()) return;
 			std::string lowerVal = value;
-			std::transform(lowerVal.begin(), lowerVal.end(), lowerVal.begin(), [](auto& c) {
+			std::ranges::transform(lowerVal, lowerVal.begin(), [](auto& c) {
 				return std::tolower(c);
 			});
 			if (lowerVal == "true" || lowerVal == "on" || lowerVal == "1") {
@@ -224,7 +226,7 @@ export namespace modernIni {
 		requires std::is_integral_v<T> || std::is_floating_point_v<T>
 		void operator=(const T& val) {
 			type = Type::Value;
-			value = std::format("{}", val);
+			value = std::to_string(val);
 		}
 
 		template<EnumHasNoToIni T>
