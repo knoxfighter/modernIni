@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <regex>
+#include <algorithm>
 #include <ranges>
 #include <charconv>
 #include <type_traits>
