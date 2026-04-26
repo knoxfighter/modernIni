@@ -80,10 +80,11 @@ if (BUILD_TESTS)
 	include(GoogleTest)
 	add_executable(
 			${PROJECT_NAME}Tests
+			modernIniTestAccessor.h
 			modernIniParsingTests.cpp
 			modernIniSerializationTests.cpp
 			modernIniGetTests.cpp
-			modernIniTestAccessor.h
+			modernIniSetTests.cpp
 	)
 	target_compile_features(${PROJECT_NAME}Tests PUBLIC cxx_std_23)
 	target_compile_definitions(${PROJECT_NAME}Tests PRIVATE TESTS)

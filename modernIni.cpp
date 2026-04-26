@@ -4,6 +4,68 @@
 #include <filesystem>
 #include <ranges>
 
+// modernIni::Ini::Ini(const Ini& other) : type(other.type),
+// 										key(other.key),
+// 										data(other.data),
+// 										parent(other.parent) {
+// 	// adjust parent of all children
+// 	if (type == Type::Object) {
+// 		auto& map = std::get<ObjectMap>(data);
+// 		for (auto& val : map | std::views::values) {
+// 			val.parent = this;
+// 		}
+// 	}
+// }
+//
+// modernIni::Ini& modernIni::Ini::operator=(const Ini& other) {
+// 	if (this == &other)
+// 		return *this;
+// 	type = other.type;
+// 	key = other.key;
+// 	data = other.data;
+// 	parent = other.parent;
+//
+// 	// adjust parent of all children
+// 	if (type == Type::Object) {
+// 		auto& map = std::get<ObjectMap>(data);
+// 		for (auto& val : map | std::views::values) {
+// 			val.parent = this;
+// 		}
+// 	}
+// 	return *this;
+// }
+//
+// modernIni::Ini::Ini(Ini&& other) noexcept : type(other.type),
+// 											key(std::move(other.key)),
+// 											data(std::move(other.data)),
+// 											parent(other.parent) {
+// 	// adjust parent of all children
+// 	if (type == Type::Object) {
+// 		auto& map = std::get<ObjectMap>(data);
+// 		for (auto& val : map | std::views::values) {
+// 			val.parent = this;
+// 		}
+// 	}
+// }
+//
+// modernIni::Ini& modernIni::Ini::operator=(Ini&& other) noexcept {
+// 	if (this == &other)
+// 		return *this;
+// 	type = other.type;
+// 	key = std::move(other.key);
+// 	data = std::move(other.data);
+// 	parent = other.parent;
+//
+// 	// adjust parent of all children
+// 	if (type == Type::Object) {
+// 		auto& map = std::get<ObjectMap>(data);
+// 		for (auto& val : map | std::views::values) {
+// 			val.parent = this;
+// 		}
+// 	}
+// 	return *this;
+// }
+
 void trim(std::string_view& sv) {
 	auto rm_first = sv.find_first_not_of(' ');
 	if (rm_first == std::string_view::npos) {
@@ -14,7 +76,7 @@ void trim(std::string_view& sv) {
 	sv.remove_suffix(sv.length() - (sv.find_last_not_of(' ') + 1));
 }
 
-std::string escape(std::string_view str) {
+std::string modernIni::detail::escape(std::string_view str) {
 	std::string res;
 	res.reserve(str.size());
 
@@ -37,8 +99,7 @@ std::string escape(std::string_view str) {
 	return res;
 }
 
-// This returns the character that starts a comment
-size_t unescape(std::string& str) {
+size_t modernIni::detail::unescape(std::string& str) {
 	size_t comment_start = std::string::npos;
 	size_t write = 0;
 	for (size_t i = 0; i < str.size(); ++i, ++write) {
@@ -70,44 +131,15 @@ size_t unescape(std::string& str) {
 	return comment_start;
 }
 
-modernIni::Ini::Ini(const Ini& other) : type(other.type),
-										key(other.key),
-										data(other.data),
-										parent(other.parent) {
-	// adjust parent of all children
-	if (type == Type::Object) {
-		auto& map = std::get<ObjectMap>(data);
-		for (auto& val : map | std::views::values) {
-			val.parent = this;
-		}
-	}
-}
-
-modernIni::Ini& modernIni::Ini::operator=(const Ini& other) {
-	if (this == &other)
-		return *this;
+modernIni::Ini::Ini(Ini&& other) noexcept {
 	type = other.type;
-	key = other.key;
-	data = other.data;
+	key = std::move(other.key);
+	data = std::move(other.data);
 	parent = other.parent;
 
-	// adjust parent of all children
+	// update the parent object of all children
 	if (type == Type::Object) {
-		auto& map = std::get<ObjectMap>(data);
-		for (auto& val : map | std::views::values) {
-			val.parent = this;
-		}
-	}
-	return *this;
-}
-
-modernIni::Ini::Ini(Ini&& other) noexcept : type(other.type),
-											key(std::move(other.key)),
-											data(std::move(other.data)),
-											parent(other.parent) {
-	// adjust parent of all children
-	if (type == Type::Object) {
-		auto& map = std::get<ObjectMap>(data);
+		auto& map = std::get<ObjectStorage>(data);
 		for (auto& val : map | std::views::values) {
 			val.parent = this;
 		}
@@ -115,16 +147,14 @@ modernIni::Ini::Ini(Ini&& other) noexcept : type(other.type),
 }
 
 modernIni::Ini& modernIni::Ini::operator=(Ini&& other) noexcept {
-	if (this == &other)
-		return *this;
 	type = other.type;
 	key = std::move(other.key);
 	data = std::move(other.data);
 	parent = other.parent;
 
-	// adjust parent of all children
+	// update the parent object of all children
 	if (type == Type::Object) {
-		auto& map = std::get<ObjectMap>(data);
+		auto& map = std::get<ObjectStorage>(data);
 		for (auto& val : map | std::views::values) {
 			val.parent = this;
 		}
@@ -132,55 +162,86 @@ modernIni::Ini& modernIni::Ini::operator=(Ini&& other) noexcept {
 	return *this;
 }
 
-bool modernIni::Ini::hasValueElements() const {
-	auto children = std::get_if<ObjectMap>(&data);
-	if (children == nullptr) {
-		return false;
+modernIni::Result<bool> modernIni::Ini::hasValueChildren() const {
+	if (type != Type::Object) {
+		return std::unexpected(Error::WrongType);
 	}
-	return std::ranges::any_of(*children | std::views::values, std::bind_front(std::equal_to{}, Type::Value), &Ini::type);
+	return std::ranges::any_of(std::get<ObjectStorage>(data) | std::views::values, std::bind_front(std::equal_to{}, Type::Value), &Ini::type);
 }
 
-void modernIni::Ini::getCategories(std::vector<std::string>& categories) const {
+void modernIni::Ini::getParentPath(std::vector<std::string>& categories) const {
+	// We don't need a check for type, parents will always be of type Object
+
 	// We stop propagating if the key is empty
 	if (key.empty()) {
 		return;
 	}
 
 	if (parent != nullptr) {
-		parent->getCategories(categories);
+		parent->getParentPath(categories);
 	}
 	categories.push_back(key);
 }
 
-std::string modernIni::Ini::getCategories() const {
+std::string modernIni::Ini::getParentPath() const {
 	std::vector<std::string> categories;
-	getCategories(categories);
+	getParentPath(categories);
 	return categories
 		   | std::views::transform([](const std::string& cat) { return std::format("[{}]", cat); })
 		   | std::views::join
 		   | std::ranges::to<std::string>();
 }
 
+modernIni::Result<void> modernIni::Ini::erase(const std::string& key) {
+	if (type != Type::Object) {
+		return std::unexpected(Error::WrongType);
+	}
+	std::get<ObjectStorage>(data).erase(key);
+
+	return {};
+}
+
+modernIni::Ini& modernIni::Ini::operator[](const std::string& key) noexcept {
+	setType(Type::Object);
+
+	Ini ini(key, this);
+	auto it = std::get<ObjectStorage>(data).insert_or_assign(key, std::move(ini));
+	return it.first->second;
+}
+
+void modernIni::Ini::setType(Type t) noexcept {
+	// do nothing if already of the correct type
+	if (type == t) {
+		return;
+	}
+	type = t;
+	switch (t) {
+		case Type::Object:
+			data = ObjectStorage{};
+			break;
+		case Type::Value:
+			data = ValueStorage{};
+			break;
+	}
+}
+
 std::istream& modernIni::operator>>(std::istream& input, Ini& ini) {
 	Ini* lastCategory = &ini;
 
-	// global element always object
-	ini.type = Type::Object;
-
 	for (std::string line; std::getline(input, line);) {
-		auto comment_start = unescape(line);
+		auto commentStart = detail::unescape(line);
 
-		std::string_view line_view = line;
+		std::string_view lineView = line;
 
-		line_view = line_view.substr(0, comment_start);
-		trim(line_view);
+		lineView = lineView.substr(0, commentStart);
+		trim(lineView);
 
-		if (line_view.empty()) {
+		if (lineView.empty()) {
 			continue;
 		}
 
 		// If trimmed line starts with `[` it is a category
-		if (line_view.front() == '[') {
+		if (lineView.front() == '[') {
 			// reset, so we are always the top most element and a new subcategory list can start
 			lastCategory = &ini;
 
@@ -188,35 +249,29 @@ std::istream& modernIni::operator>>(std::istream& input, Ini& ini) {
 
 			do {
 				// nextStart always points at a '[', so we have to increment it.
-				line_view.remove_prefix(nextStart + 1);
+				lineView.remove_prefix(nextStart + 1);
 
-				auto end = line_view.find_first_of(']');
+				auto end = lineView.find_first_of(']');
 				if (end == std::string_view::npos) {
 					// This should be noexcept, therefore just log and exit here
 					// throw std::runtime_error("Invalid category name");
 					return input;
 				}
-				auto catName = line_view.substr(0, end);
+				auto catName = lineView.substr(0, end);
 				trim(catName);
 
-				auto data = std::get_if<Ini::ObjectMap>(&lastCategory->data);
-				if (!data) {
-					// This should be noexcept, therefore just log and exit here
-					// throw std::runtime_error("Invalid lastCategory");
-					return input;
-				}
 				auto catNameStr = std::string(catName);
-				lastCategory = &data->try_emplace(catNameStr, Type::Object, std::move(catNameStr), lastCategory).first->second;
+				lastCategory = &std::get<Ini::ObjectStorage>(lastCategory->data).try_emplace(catNameStr, std::move(catNameStr), lastCategory).first.operator*().second;
 
-				line_view.remove_prefix(end + 1);
+				lineView.remove_prefix(end + 1);
 
-				nextStart = line_view.find_first_of('[');
+				nextStart = lineView.find_first_of('[');
 			} while (nextStart != std::string_view::npos);
 		}
 		// else this is a key-value pair
 		else {
-			auto key = line_view.substr(0, line_view.find_first_of('='));
-			auto value = line_view.substr(line_view.find_first_of('=') + 1);
+			auto key = lineView.substr(0, lineView.find_first_of('='));
+			auto value = lineView.substr(lineView.find_first_of('=') + 1);
 
 			trim(key);
 			trim(value);
@@ -224,56 +279,84 @@ std::istream& modernIni::operator>>(std::istream& input, Ini& ini) {
 			auto trimmedKey = std::string(key);
 			auto trimmedValue = std::string(value);
 
-			auto data = std::get_if<Ini::ObjectMap>(&lastCategory->data);
-			if (!data) {
-				// This should be noexcept, therefore just log and exit here
-				// throw std::runtime_error("Invalid lastCategory");
-				return input;
-			}
-			data->try_emplace(trimmedKey, trimmedKey, trimmedValue, lastCategory);
+			std::get<Ini::ObjectStorage>(lastCategory->data).try_emplace(trimmedKey, std::move(trimmedKey), std::move(trimmedValue), lastCategory);
 		}
 	}
 
 	return input;
 }
+
 std::ostream& modernIni::operator<<(std::ostream& output, const Ini& ini) {
 	switch (ini.type) {
 		case Type::Object: {
-			auto children = std::get_if<Ini::ObjectMap>(&ini.data);
-			if (!children) {
-				return output;
-			}
+			auto& children = std::get<Ini::ObjectStorage>(ini.data);
 
 			// write out this categories key-value pairs
-			for (const auto& element : *children
+			for (const auto& element : children
 											   | std::views::values
-											   | std::views::filter([](const Ini& element) { return element.type == Type::Value; })) {
+											   | std::views::filter([](const auto& element) { return element.type == Type::Value; })) {
 				output << element;
 			}
 
 			// write out these categories child categories
-			for (const auto& element : *children
+			for (const auto& element : children
 											   | std::views::values
-											   | std::views::filter([](const Ini& element) { return element.type == Type::Object; })) {
-				if (element.hasValueElements()) {
+											   | std::views::filter([](const auto& element) { return element.type == Type::Object; })) {
+				if (auto hasValueElements = element.hasValueChildren(); hasValueElements && hasValueElements.value()) {
 					output << '\n'
-						   << escape(element.getCategories()) << '\n';
+						   << detail::escape(element.getParentPath()) << '\n';
 				}
 				output << element;
 			}
-
 			break;
 		}
-		case Type::Value: {
-			auto data = std::get_if<std::string>(&ini.data);
-			if (!data) {
-				return output;
-			}
-
-			output << escape(ini.key) << " = " << escape(*data) << '\n';
+		case Type::Value:
+			output << detail::escape(ini.key) << " = " << detail::escape(std::get<Ini::ValueStorage>(ini.data)) << '\n';
 			break;
-		}
+	}
+	return output;
+}
+
+modernIni::Result<void> modernIni::from_ini(const Ini& ini, std::string& value) {
+	if (ini.type != Type::Value) {
+		return std::unexpected(Error::WrongType);
+	}
+	value = std::get<Ini::ValueStorage>(ini.data);
+	return {};
+}
+
+modernIni::Result<void> modernIni::from_ini(const Ini& ini, std::string_view& value) {
+	if (ini.type != Type::Value) {
+		return std::unexpected(Error::WrongType);
+	}
+	value = std::get<Ini::ValueStorage>(ini.data);
+	return {};
+}
+
+modernIni::Result<void> modernIni::from_ini(const Ini& ini, bool& value) {
+	// Type is checked in the get of std::string!
+
+	auto str = ini.get<std::string>();
+	if (!str) {
+		return std::unexpected(str.error());
 	}
 
-	return output;
+	std::ranges::transform(str.value(), str.value().begin(), [](auto& c) {
+		return std::tolower(c);
+	});
+	if (str == "true" || str == "on" || str == "1") {
+		value = true;
+		return {};
+	}
+	if (str == "false" || str == "off" || str == "0") {
+		value = false;
+		return {};
+	}
+
+	return std::unexpected(Error::InvalidValue);
+}
+
+void modernIni::to_ini(Ini& ini, std::string_view value) {
+	ini.setType(Type::Value);
+	std::get<Ini::ValueStorage>(ini.data) = value;
 }

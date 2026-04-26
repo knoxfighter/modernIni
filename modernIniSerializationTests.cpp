@@ -21,7 +21,7 @@ TEST(ModernIniSerializationTests, SerializeCategory) {
 
 	auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	children.try_emplace("test", "test", "value", &ini);
-	auto& cat = children.try_emplace("cat", modernIni::Type::Object, "cat", &ini).first.operator*().second;
+	auto& cat = children.try_emplace("cat", "cat", &ini).first.operator*().second;
 	auto& children2 = ModernIniTestAccessor::getPrivateChildren(cat);
 	children2.try_emplace("test2", "test2", "value", &cat);
 
@@ -39,10 +39,10 @@ TEST(ModernIniSerializationTests, SerializeMultiple) {
 	auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	children.try_emplace("test", "test", "value", &ini);
 
-	auto& cat = children.try_emplace("cat", modernIni::Type::Object, "cat", &ini).first.operator*().second;
+	auto& cat = children.try_emplace("cat", "cat", &ini).first.operator*().second;
 	auto& children2 = ModernIniTestAccessor::getPrivateChildren(cat);
 
-	auto& tree = children2.try_emplace("tree", modernIni::Type::Object, "tree", &cat).first.operator*().second;
+	auto& tree = children2.try_emplace("tree", "tree", &cat).first.operator*().second;
 	auto& children3 = ModernIniTestAccessor::getPrivateChildren(tree);
 	children3.try_emplace("test2", "test2", "value", &tree);
 
@@ -57,7 +57,7 @@ TEST(ModernIniSerializationTests, SerializeMultiple) {
 TEST(ModernIniSerializationTests, SerializeEscaped) {
 	modernIni::Ini ini;
 	auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
-	children["test"] = modernIni::Ini("test", "\n;\\", &ini);
+	children.try_emplace("test", "test", "\n;\\", &ini);
 
 	std::ostringstream output;
 	output << ini;

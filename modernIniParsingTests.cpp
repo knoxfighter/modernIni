@@ -8,10 +8,10 @@ TEST(ModernIniParsingTests, ParseSimple) {
 	std::istringstream input("test = 1");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "1", &ini);
+	ModernIniTestAccessor::check(elem, "test", "1", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseTrims) {
@@ -19,10 +19,10 @@ TEST(ModernIniParsingTests, ParseTrims) {
 	std::istringstream input("  test = 1  ");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "1", &ini);
+	ModernIniTestAccessor::check(elem, "test", "1", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseEmpty) {
@@ -30,7 +30,7 @@ TEST(ModernIniParsingTests, ParseEmpty) {
 	std::istringstream input("  ");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 0, nullptr);
+	ModernIniTestAccessor::check(ini, "", 0, nullptr);
 }
 
 TEST(ModernIniParsingTests, ParseEmptyValue) {
@@ -38,10 +38,10 @@ TEST(ModernIniParsingTests, ParseEmptyValue) {
 	std::istringstream input("test = ");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "", &ini);
+	ModernIniTestAccessor::check(elem, "test", "", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseWithComment) {
@@ -49,10 +49,10 @@ TEST(ModernIniParsingTests, ParseWithComment) {
 	std::istringstream input("test = 1 ; comment");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "1", &ini);
+	ModernIniTestAccessor::check(elem, "test", "1", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseEmptyComment) {
@@ -60,7 +60,7 @@ TEST(ModernIniParsingTests, ParseEmptyComment) {
 	std::istringstream input("; comment");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 0, nullptr);
+	ModernIniTestAccessor::check(ini, "", 0, nullptr);
 }
 
 TEST(ModernIniParsingTests, ParseEscaped) {
@@ -68,10 +68,10 @@ TEST(ModernIniParsingTests, ParseEscaped) {
 	std::istringstream input(R"(test = \n\;\\)");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "\n;\\", &ini);
+	ModernIniTestAccessor::check(elem, "test", "\n;\\", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseMultiple) {
@@ -79,12 +79,12 @@ TEST(ModernIniParsingTests, ParseMultiple) {
 	std::istringstream input("test = 1\nkey = value");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 2, nullptr);
+	ModernIniTestAccessor::check(ini, "", 2, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkValue(elem, "test", "1", &ini);
+	ModernIniTestAccessor::check(elem, "test", "1", &ini);
 	const auto& elem2 = children.at("key");
-	ModernIniTestAccessor::checkValue(elem2, "key", "value", &ini);
+	ModernIniTestAccessor::check(elem2, "key", "value", &ini);
 }
 
 TEST(ModernIniParsingTests, ParseCategory) {
@@ -92,13 +92,13 @@ TEST(ModernIniParsingTests, ParseCategory) {
 	std::istringstream input("[test]\nkey = value");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkObject(elem, "test", 1, &ini);
+	ModernIniTestAccessor::check(elem, "test", 1, &ini);
 	const auto& children2 = ModernIniTestAccessor::getPrivateChildren(elem);
 	const auto& elem2 = children2.at("key");
-	ModernIniTestAccessor::checkValue(elem2, "key", "value", &elem);
+	ModernIniTestAccessor::check(elem2, "key", "value", &elem);
 }
 
 TEST(ModernIniParsingTests, ParseCategoryWithWhitespace) {
@@ -106,13 +106,13 @@ TEST(ModernIniParsingTests, ParseCategoryWithWhitespace) {
 	std::istringstream input(" [ test   ] \nkey = value");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test");
-	ModernIniTestAccessor::checkObject(elem, "test", 1, &ini);
+	ModernIniTestAccessor::check(elem, "test", 1, &ini);
 	const auto& children2 = ModernIniTestAccessor::getPrivateChildren(elem);
 	const auto& elem2 = children2.at("key");
-	ModernIniTestAccessor::checkValue(elem2, "key", "value", &elem);
+	ModernIniTestAccessor::check(elem2, "key", "value", &elem);
 }
 
 TEST(ModernIniParsingTests, ParseMultipleCategories) {
@@ -121,20 +121,20 @@ TEST(ModernIniParsingTests, ParseMultipleCategories) {
 	std::istringstream input("[test2]\nkey = value\n[test2] [test3]\nkey = value");
 	input >> ini;
 
-	ModernIniTestAccessor::checkObject(ini, "", 1, nullptr);
+	ModernIniTestAccessor::check(ini, "", 1, nullptr);
 
 	const auto& children = ModernIniTestAccessor::getPrivateChildren(ini);
 	const auto& elem = children.at("test2");
-	ModernIniTestAccessor::checkObject(elem, "test2", 2, &ini);
+	ModernIniTestAccessor::check(elem, "test2", 2, &ini);
 
 	const auto& children2 = ModernIniTestAccessor::getPrivateChildren(elem);
 	const auto& elem2 = children2.at("key");
-	ModernIniTestAccessor::checkValue(elem2, "key", "value", &elem);
+	ModernIniTestAccessor::check(elem2, "key", "value", &elem);
 
 	const auto& elem3 = children2.at("test3");
-	ModernIniTestAccessor::checkObject(elem3, "test3", 1, &elem);
+	ModernIniTestAccessor::check(elem3, "test3", 1, &elem);
 	const auto& children3 = ModernIniTestAccessor::getPrivateChildren(elem3);
 
 	const auto& elem4 = children3.at("key");
-	ModernIniTestAccessor::checkValue(elem4, "key", "value", &elem3);
+	ModernIniTestAccessor::check(elem4, "key", "value", &elem3);
 }
