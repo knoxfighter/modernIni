@@ -66,3 +66,12 @@ TEST(ModernIniSerializationTests, SerializeEscaped) {
 	auto str = output.str();
 	ASSERT_EQ(str, "test = \\n\\;\\\\\n");
 }
+
+TEST(ModernIniSerializationTests, SerializeEmptyCategory) {
+	modernIni::Ini ini;
+	ini["cat"]["sub"]["key"] = "value"; // deep nest, no values directly in "cat"
+	std::ostringstream os;
+	os << ini;
+	// "cat" itself has no value children, only a sub-object, so no [cat] header alone
+	ASSERT_EQ(os.str(), "\n[cat][sub]\nkey = value\n");
+}

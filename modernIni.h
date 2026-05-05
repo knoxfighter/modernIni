@@ -62,6 +62,9 @@ namespace modernIni {
 		// destruct
 		~Ini() = default;
 
+		/**
+		 * Note: When getting a negative unsigned integer, the value will wrap.
+		 */
 		template<typename C>
 		requires std::is_default_constructible_v<C> && std::is_move_constructible_v<C>
 		[[nodiscard]] Result<C> get() const noexcept {
@@ -73,6 +76,9 @@ namespace modernIni {
 			return std::move(val);
 		}
 
+		/**
+		 * Note: When getting a negative unsigned integer, the value will wrap.
+		 */
 		template<typename C>
 		[[nodiscard]] Result<void> get_to(C&& val) const noexcept {
 			return from_ini(*this, std::forward<C>(val));
@@ -173,6 +179,7 @@ namespace modernIni {
 		}
 
 		[[nodiscard]] Result<void> erase(const std::string& key);
+		[[nodiscard]] Result<bool> contains(const std::string& key) const noexcept;
 		Ini& operator[](const std::string& key) noexcept;
 
 	private:
@@ -195,10 +202,23 @@ namespace modernIni {
 		friend class ::ModernIniTestAccessor;
 	};
 
-	// deserialize from stream
+	/**
+	 * Deserialize Ini from the input stream.
+	 * If a key is defined multiple times under the same section, only the *first* value will be kept.
+	 *
+	 * @param input Input stream to read from
+	 * @param ini Ini instance to deserialize into
+	 * @return Reference to the input stream
+	 */
 	std::istream& operator>>(std::istream& input, Ini& ini);
 
-	// serialize to stream
+	/**
+	 * Serialize Ini to the output stream.
+	 *
+	 * @param output Output stream to write to
+	 * @param ini Ini instance to serialize
+	 * @return Reference to the output stream
+	 */
 	std::ostream& operator<<(std::ostream& output, const Ini& ini);
 
 	// FROM_INI for STL
@@ -210,8 +230,7 @@ namespace modernIni {
 	Result<void> from_ini(const Ini& ini, bool& value);
 
 	/**
-	* Integer parsers: Expects the pattern identical to the one used by std::strtol in the default ("C") locale and the given non-zero numeric base, except that
-	* - leading whitespace is not ignored.
+	 * Integer parsers: Expects the pattern identical to the one used by std::strtol in the default ("C") locale and the given non-zero numeric base, except that
 	 */
 	template<typename N>
 	requires std::is_integral_v<N>
@@ -249,6 +268,11 @@ namespace modernIni {
 		return std::unexpected(Error::InvalidValue);
 	}
 
+	/**
+	 * Parses a floating point value from an Ini object.
+	 * This function uses std::from_chars to parse the floating point value.
+	 * Special values inf, nan and -inf are supported.
+	 */
 	template<typename N>
 	requires std::is_floating_point_v<N>
 	[[nodiscard]] Result<void> from_ini(const Ini& ini, N& value) {
@@ -264,7 +288,14 @@ namespace modernIni {
 		return std::unexpected(Error::InvalidValue);
 	}
 
+	template<typename E>
+	requires std::is_enum_v<E>
+	[[nodiscard]] Result<void> from_ini(const Ini& ini, E& value) {
+
+	}
+
 	// TO_INI for STL
+	// this serializes all int types, bool and floating points
 	void to_ini(Ini& ini, std::string_view value);
 	template<typename N>
 	requires std::is_integral_v<N> or std::is_floating_point_v<N>

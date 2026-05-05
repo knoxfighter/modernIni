@@ -1,4 +1,5 @@
 #include "modernIni.h"
+#include "modernIniTestAccessor.h"
 
 #include <string>
 
@@ -45,6 +46,28 @@ TEST(ModernIniGetTests, GetString) {
 
 	testGet(ini, "test", "value"s);
 	testGetTo(ini, "test", "value"s);
+}
+
+TEST(ModernIniGetTests, GetStringView) {
+	modernIni::Ini ini;
+	std::istringstream input("test = value");
+	input >> ini;
+
+	testGet<std::string_view>(ini, "test", "value"s);
+	testGetTo<std::string_view>(ini, "test", "value"s);
+}
+
+TEST(ModernIniGetTests, GetStringViewLifetime) {
+	modernIni::Ini ini;
+	std::istringstream input("test = value");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<std::string_view>().value();
+	ASSERT_EQ(value, "value");
+	auto& child = ModernIniTestAccessor::getPrivateChildren(ini).at("test");
+	const auto& val = ModernIniTestAccessor::getPrivateValue(child);
+	// check if the string points to the same memory than the view.
+	ASSERT_EQ(val.data(), value.data());
 }
 
 TEST(ModernIniGetTests, KeyNotFoundError) {
@@ -137,6 +160,9 @@ TEST(ModernIniGetTests, GetIntNegative) {
 
 	testGet(ini, "test", -42);
 	testGetTo(ini, "test", -42);
+
+	testGet(ini, "test", static_cast<uint32_t>(-42));
+	testGetTo(ini, "test", static_cast<uint32_t>(-42));
 }
 
 TEST(ModernIniGetTests, GetIntTypes) {
@@ -163,13 +189,29 @@ TEST(ModernIniGetTests, GetIntTypes) {
 	testGetTo(ini, "test6", -0b10);
 }
 
+TEST(ModernIniGetTests, GetIntPartialString) {
+	modernIni::Ini ini;
+	std::istringstream input("test = 42abc");
+	input >> ini;
+
+	// Document whether partial parses are accepted or rejected
+	testGet<int>(ini, "test", 42);
+	testGetTo<int>(ini, "test", 42);
+}
+
 TEST(ModernIniGetTests, GetIntError) {
 	modernIni::Ini ini;
-	std::istringstream input("test = askjhdf");
+	std::istringstream input("test = askjhdf\ntest2 = 99999999999999999999999\ntest3 = -1\ntest4 = ");
 	input >> ini;
 
 	testGet<int>(ini, "test", modernIni::Error::InvalidValue);
 	testGetTo<int>(ini, "test", modernIni::Error::InvalidValue);
+
+	testGet<int>(ini, "test2", modernIni::Error::InvalidValue);
+	testGetTo<int>(ini, "test2", modernIni::Error::InvalidValue);
+
+	testGet<int>(ini, "test4", modernIni::Error::InvalidValue);
+	testGetTo<int>(ini, "test4", modernIni::Error::InvalidValue);
 }
 
 TEST(ModernIniGetTests, GetFloat) {
@@ -194,6 +236,21 @@ TEST(ModernIniGetTests, GetFloat) {
 	testGetTo(ini, "test2", -42.5);
 }
 
+TEST(ModernIniGetTests, GetFloatSpecialValues) {
+	modernIni::Ini ini;
+	std::istringstream input("test = inf\ntest2 = nan\ntest3 = -inf");
+	input >> ini;
+
+	testGet<float>(ini, "test",  std::numeric_limits<float>::infinity());
+	testGetTo<float>(ini, "test",  std::numeric_limits<float>::infinity());
+	ASSERT_TRUE(std::isnan(ini.at("test2").value().get().get<float>().value()));
+	float f = 0.f;
+	ASSERT_TRUE(ini.at("test2").value().get().get_to(f));
+	ASSERT_TRUE(std::isnan(f));
+	testGet<float>(ini, "test3", -std::numeric_limits<float>::infinity());
+	testGetTo<float>(ini, "test3", -std::numeric_limits<float>::infinity());
+}
+
 TEST(ModernIniGetTests, GetFloatError) {
 	modernIni::Ini ini;
 	std::istringstream input("test = askjhdf");
@@ -201,4 +258,25 @@ TEST(ModernIniGetTests, GetFloatError) {
 
 	testGet<float>(ini, "test", modernIni::Error::InvalidValue);
 	testGetTo<float>(ini, "test", modernIni::Error::InvalidValue);
+}
+
+TEST(ModernIniGetTests, GetObjectError) {
+	modernIni::Ini ini;
+	std::istringstream input("[test]");
+	input >> ini;
+
+	testGet<std::string>(ini, "test", modernIni::Error::WrongType);
+	testGetTo<std::string>(ini, "test", modernIni::Error::WrongType);
+}
+
+TEST(ModernIniGetTests, GetToUnchangedOnError) {
+	modernIni::Ini ini;
+	std::istringstream input("test = abc");
+	input >> ini;
+
+	int test = 42;
+	auto t = ini.at("test").and_then([&](const modernIni::Ini& value) -> modernIni::Result<void> { return value.get_to(test); });
+	ASSERT_FALSE(t.has_value());
+	ASSERT_EQ(t.error(), modernIni::Error::InvalidValue);
+	ASSERT_EQ(test, 42);
 }

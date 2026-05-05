@@ -4,76 +4,16 @@
 #include <filesystem>
 #include <ranges>
 
-// modernIni::Ini::Ini(const Ini& other) : type(other.type),
-// 										key(other.key),
-// 										data(other.data),
-// 										parent(other.parent) {
-// 	// adjust parent of all children
-// 	if (type == Type::Object) {
-// 		auto& map = std::get<ObjectMap>(data);
-// 		for (auto& val : map | std::views::values) {
-// 			val.parent = this;
-// 		}
-// 	}
-// }
-//
-// modernIni::Ini& modernIni::Ini::operator=(const Ini& other) {
-// 	if (this == &other)
-// 		return *this;
-// 	type = other.type;
-// 	key = other.key;
-// 	data = other.data;
-// 	parent = other.parent;
-//
-// 	// adjust parent of all children
-// 	if (type == Type::Object) {
-// 		auto& map = std::get<ObjectMap>(data);
-// 		for (auto& val : map | std::views::values) {
-// 			val.parent = this;
-// 		}
-// 	}
-// 	return *this;
-// }
-//
-// modernIni::Ini::Ini(Ini&& other) noexcept : type(other.type),
-// 											key(std::move(other.key)),
-// 											data(std::move(other.data)),
-// 											parent(other.parent) {
-// 	// adjust parent of all children
-// 	if (type == Type::Object) {
-// 		auto& map = std::get<ObjectMap>(data);
-// 		for (auto& val : map | std::views::values) {
-// 			val.parent = this;
-// 		}
-// 	}
-// }
-//
-// modernIni::Ini& modernIni::Ini::operator=(Ini&& other) noexcept {
-// 	if (this == &other)
-// 		return *this;
-// 	type = other.type;
-// 	key = std::move(other.key);
-// 	data = std::move(other.data);
-// 	parent = other.parent;
-//
-// 	// adjust parent of all children
-// 	if (type == Type::Object) {
-// 		auto& map = std::get<ObjectMap>(data);
-// 		for (auto& val : map | std::views::values) {
-// 			val.parent = this;
-// 		}
-// 	}
-// 	return *this;
-// }
-
 void trim(std::string_view& sv) {
-	auto rm_first = sv.find_first_not_of(' ');
+	// hardcoded list of whitespace characters
+	std::string_view chars = " \r\t";
+	auto rm_first = sv.find_first_not_of(chars);
 	if (rm_first == std::string_view::npos) {
 		sv = "";
 		return;
 	}
 	sv.remove_prefix(rm_first);
-	sv.remove_suffix(sv.length() - (sv.find_last_not_of(' ') + 1));
+	sv.remove_suffix(sv.length() - (sv.find_last_not_of(chars) + 1));
 }
 
 std::string modernIni::detail::escape(std::string_view str) {
@@ -200,6 +140,12 @@ modernIni::Result<void> modernIni::Ini::erase(const std::string& key) {
 
 	return {};
 }
+modernIni::Result<bool> modernIni::Ini::contains(const std::string& key) const noexcept {
+	if (type != Type::Object) {
+		return std::unexpected(Error::WrongType);
+	}
+	return std::get<ObjectStorage>(data).contains(key);
+}
 
 modernIni::Ini& modernIni::Ini::operator[](const std::string& key) noexcept {
 	setType(Type::Object);
@@ -253,9 +199,8 @@ std::istream& modernIni::operator>>(std::istream& input, Ini& ini) {
 
 				auto end = lineView.find_first_of(']');
 				if (end == std::string_view::npos) {
-					// This should be noexcept, therefore just log and exit here
-					// throw std::runtime_error("Invalid category name");
-					return input;
+					// We simulate a missing closing bracket as if it was there
+					end = lineView.size();
 				}
 				auto catName = lineView.substr(0, end);
 				trim(catName);
@@ -263,15 +208,17 @@ std::istream& modernIni::operator>>(std::istream& input, Ini& ini) {
 				auto catNameStr = std::string(catName);
 				lastCategory = &std::get<Ini::ObjectStorage>(lastCategory->data).try_emplace(catNameStr, std::move(catNameStr), lastCategory).first.operator*().second;
 
-				lineView.remove_prefix(end + 1);
+				lineView.remove_prefix(end);
 
 				nextStart = lineView.find_first_of('[');
 			} while (nextStart != std::string_view::npos);
 		}
 		// else this is a key-value pair
 		else {
-			auto key = lineView.substr(0, lineView.find_first_of('='));
-			auto value = lineView.substr(lineView.find_first_of('=') + 1);
+			auto firstEqual = lineView.find_first_of('=');
+			// if no = is found, there is no value only a key.
+			auto key = firstEqual == std::string_view::npos ? lineView : lineView.substr(0, firstEqual);
+			auto value = firstEqual == std::string_view::npos ? "" : lineView.substr(firstEqual + 1);
 
 			trim(key);
 			trim(value);
