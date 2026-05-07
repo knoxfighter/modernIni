@@ -268,6 +268,8 @@ namespace modernIni {
 
 	Result<void> from_ini(const Ini& ini, bool& value);
 
+	Result<void> from_ini(const Ini& ini, char& value);
+
 	/**
 	 * Integer parsers: Expects the pattern identical to the one used by std::strtol in the default ("C") locale and the given non-zero numeric base, except that
 	 */
@@ -356,6 +358,24 @@ namespace modernIni {
 		// return from_ini(ini, static_cast<int&>(value));
 	}
 
+	template<typename T>
+	[[nodiscard]] Result<void> from_ini(const Ini& ini, std::optional<T>& value) {
+		auto str = ini.get<std::string_view>();
+		if (!str) {
+			return std::unexpected(str.error());
+		}
+		if (str.value().empty()) {
+			value = std::nullopt;
+			return {};
+		}
+		auto getT = ini.get<T>();
+		if (!getT) {
+			return std::unexpected(getT.error());
+		}
+		value = getT.value();
+		return {};
+	}
+
 	// TO_INI for STL
 	// this serializes all int types, bool and floating points
 	void to_ini(Ini& ini, std::string_view value);
@@ -374,6 +394,15 @@ namespace modernIni {
 			ini = std::to_underlying(value);
 		} else if constexpr (type == customize::IniEnumType::MagicEnum) {
 			ini = magic_enum::enum_name(value);
+		}
+	}
+
+	template<typename T>
+	void to_ini(Ini& ini, std::optional<T> value) {
+		if (value) {
+			ini = *value;
+		} else {
+			ini = "";
 		}
 	}
 } // namespace modernIni

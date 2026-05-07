@@ -303,6 +303,18 @@ modernIni::Result<void> modernIni::from_ini(const Ini& ini, bool& value) {
 	return std::unexpected(Error::InvalidValue);
 }
 
+modernIni::Result<void> modernIni::from_ini(const Ini& ini, char& value) {
+	auto str = ini.get<std::string_view>();
+	if (!str) {
+		return std::unexpected(str.error());
+	}
+	if (str.value().size() != 1) {
+		return std::unexpected(Error::InvalidValue);
+	}
+	value = str.value()[0];
+	return {};
+}
+
 void modernIni::to_ini(Ini& ini, std::string_view value) {
 	ini.setType(Type::Value);
 	std::get<Ini::ValueStorage>(ini.data) = value;

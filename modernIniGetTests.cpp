@@ -294,6 +294,7 @@ TEST(ModernIniGetTests, EnumMagic) {
 	ASSERT_TRUE(ini.at("test").value().get().get_to(test));
 	ASSERT_EQ(test, TestEnumDefault::Test1);
 }
+
 TEST(ModernIniGetTests, EnumNum) {
 	modernIni::Ini ini;
 	std::istringstream input("test = 1\n");
@@ -302,4 +303,34 @@ TEST(ModernIniGetTests, EnumNum) {
 	TestEnumDefault test;
 	ASSERT_TRUE(ini.at("test").value().get().get_to(test));
 	ASSERT_EQ(test, TestEnumDefault::Test2);
+}
+
+TEST(ModernIniGetTests, Char) {
+	modernIni::Ini ini;
+	std::istringstream input("test = a\n");
+	input >> ini;
+
+	auto str = ini.at("test").value().get().get<char>();
+	ASSERT_TRUE(str.has_value());
+	ASSERT_EQ(str.value(), 'a');
+}
+
+TEST(ModernIniGetTests, GetOptionalValue) {
+	modernIni::Ini ini;
+	std::istringstream input("test = 42\n");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<std::optional<int>>();
+	ASSERT_TRUE(value.has_value());
+	ASSERT_EQ(value.value(), 42);
+}
+
+TEST(ModernIniGetTests, GetOptionalEmpty) {
+	modernIni::Ini ini;
+	std::istringstream input("test = \n");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<std::optional<int>>();
+	ASSERT_TRUE(value.has_value());
+	ASSERT_FALSE(value.value());
 }

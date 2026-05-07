@@ -117,3 +117,63 @@ TEST(ModernIniSetTests, EnumNum) {
 	auto str = ini.at("key").value().get().get<std::string_view>();
 	ASSERT_EQ(str.value(), "1");
 }
+
+TEST(ModernIniSetTests, Char) {
+	modernIni::Ini ini;
+	ini["key"] = 'a';
+
+	auto str = ini.at("key").value().get().get<std::string_view>();
+	ASSERT_EQ(str.value(), "a");
+}
+
+// WE DO NOT SUPPORT THESE AT THE MOMENT
+// TEST(ModernIniSetTests, Char8) {
+// 	modernIni::Ini ini;
+// 	ini["key"] = u8'a';
+//
+// 	auto str = ini.at("key").value().get().get<std::string_view>();
+// 	ASSERT_EQ(str.value(), "a");
+// }
+//
+// TEST(ModernIniSetTests, Char16) {
+// 	modernIni::Ini ini;
+// 	ini["key"] = u'a';
+//
+// 	auto str = ini.at("key").value().get().get<std::string_view>();
+// 	ASSERT_EQ(str.value(), "a");
+// }
+//
+// TEST(ModernIniSetTests, Char32) {
+// 	modernIni::Ini ini;
+// 	ini["key"] = U'a';
+//
+// 	auto str = ini.at("key").value().get().get<std::string_view>();
+// 	ASSERT_EQ(str.value(), "a");
+// }
+//
+// TEST(ModernIniSetTests, WideChar) {
+// 	modernIni::Ini ini;
+// 	ini["key"] = L'a';
+//
+// 	auto str = ini.at("key").value().get().get<std::string_view>();
+// 	ASSERT_EQ(str.value(), "a");
+// }
+
+TEST(ModernIniSetTests, SetOptionalValue) {
+	modernIni::Ini ini;
+	ini["key"] = std::optional<int>(42);
+
+
+	auto value = ini.at("key")->get().get<std::string_view>();
+	ASSERT_TRUE(value.has_value());
+	ASSERT_EQ(value.value(), "42");
+}
+
+TEST(ModernIniSetTests, SetOptionalEmpty) {
+	modernIni::Ini ini;
+	ini["key"] = std::optional<int>(std::nullopt);
+
+	auto value = ini.at("key")->get().get<std::string_view>();
+	ASSERT_TRUE(value.has_value());
+	ASSERT_TRUE(value->empty());
+}
