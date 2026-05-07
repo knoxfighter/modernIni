@@ -70,5 +70,50 @@ TEST(ModernIniSetTests, Erase) {
 	auto res = ini.erase("key");
 	ASSERT_TRUE(res);
 	ASSERT_FALSE(ini.contains("key").value());
+}
 
+TEST(ModernIniSetTests, EnumDefault) {
+	modernIni::Ini ini;
+	enum class Test {
+		Test1,
+		Test2,
+	};
+	ini["key"] = Test::Test1;
+
+	auto str = ini.at("key").value().get().get<std::string_view>();
+	ASSERT_EQ(str.value(), "Test1");
+}
+
+enum class TestEnumMagic {
+	Test1,
+	Test2,
+};
+template<>
+struct modernIni::customize::IniEnumTypeOverride<TestEnumMagic> {
+	static constexpr auto type = IniEnumType::MagicEnum;
+};
+TEST(ModernIniSetTests, EnumMagic) {
+	modernIni::Ini ini;
+
+	ini["key"] = TestEnumMagic::Test2;
+
+	auto str = ini.at("key").value().get().get<std::string_view>();
+	ASSERT_EQ(str.value(), "Test2");
+}
+
+enum class TestEnumNum {
+	Test1,
+	Test2,
+};
+template<>
+struct modernIni::customize::IniEnumTypeOverride<TestEnumNum> {
+	static constexpr auto type = IniEnumType::Underlying;
+};
+TEST(ModernIniSetTests, EnumNum) {
+	modernIni::Ini ini;
+
+	ini["key"] = TestEnumNum::Test2;
+
+	auto str = ini.at("key").value().get().get<std::string_view>();
+	ASSERT_EQ(str.value(), "1");
 }

@@ -12,6 +12,7 @@ list(APPEND VCPKG_OVERLAY_TRIPLETS "${my-vcpkg-triplets_SOURCE_DIR}")
 project(modernIni CXX)
 
 option(BUILD_TESTS "Build the GTest executable" OFF)
+option(MAGIC_ENUM "Use magic-enum for enum names" OFF)
 
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
@@ -48,6 +49,12 @@ target_sources(${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
+if (MAGIC_ENUM)
+	find_package(magic_enum CONFIG REQUIRED)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE MAGIC_ENUM)
+	target_link_libraries(${PROJECT_NAME} PUBLIC magic_enum::magic_enum)
+endif ()
+
 include(GNUInstallDirs)
 install(TARGETS ${PROJECT_NAME}
 		EXPORT modernIniTargets
@@ -71,7 +78,6 @@ install(EXPORT modernIniTargets
 		DESTINATION share/${PROJECT_NAME}
 )
 
-# when tests are build, curl should always be defined
 if (BUILD_TESTS)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE TESTS)
 	target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest)

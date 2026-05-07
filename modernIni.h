@@ -7,6 +7,10 @@
 #include <ranges>
 #include <string>
 
+#if __has_include(<magic_enum/magic_enum.hpp>)
+#include <magic_enum/magic_enum.hpp>
+#endif
+
 #ifdef TESTS
 #include <gtest/gtest.h>
 
@@ -28,19 +32,54 @@ namespace modernIni {
 	template<typename T>
 	using Result = std::expected<T, Error>;
 
+	namespace customize {
+		enum class IniEnumType {
+			Default,
+			Underlying,
+			MagicEnum,
+		};
+		template<typename E>
+		struct IniEnumTypeOverride {
+			static constexpr auto type = IniEnumType::Default;
+		};
+	}
+
 	namespace detail {
 		std::string escape(std::string_view str);
 
 		// This returns the character that starts a comment
 		size_t unescape(std::string& str);
-	} // namespace detail
+
+#if __has_include(<magic_enum/magic_enum.hpp>)
+		constexpr bool MagicEnumAvailable = true;
+#else
+		constexpr bool MagicEnumAvailable = false;
+#endif
+		template<typename E>
+		consteval customize::IniEnumType getEnumType() {
+			auto t = customize::IniEnumTypeOverride<E>::type;
+			// resolve Default
+			if (t == customize::IniEnumType::Default) {
+				t = MagicEnumAvailable ? customize::IniEnumType::MagicEnum : customize::IniEnumType::Underlying;
+			}
+
+			switch (t) {
+				case customize::IniEnumType::Underlying:
+					return customize::IniEnumType::Underlying;
+				case customize::IniEnumType::MagicEnum:
+					static_assert(MagicEnumAvailable, "MagicEnum is not available!");
+					return customize::IniEnumType::MagicEnum;
+				default:
+					return customize::IniEnumType::Default;
+			}
+		}
+	}
 
 	class Ini {
-	private:
+	public:
 		template<typename Self, typename T>
 		using ReferenceResult = Result<std::reference_wrapper<std::conditional_t<std::is_const_v<std::remove_reference_t<Self>>, const T, T>>>;
 
-	public:
 		using ObjectStorage = std::map<std::string, Ini>;
 		using ValueStorage = std::string;
 		using Storage = std::variant<ObjectStorage, ValueStorage>;
@@ -291,7 +330,30 @@ namespace modernIni {
 	template<typename E>
 	requires std::is_enum_v<E>
 	[[nodiscard]] Result<void> from_ini(const Ini& ini, E& value) {
-
+		constexpr auto type = detail::getEnumType<E>();
+		// try magic enum first and fall back to underlying
+		// we do this to check if we can match using the string directly.
+		// If that doesn't work, we can read the number and use the value.
+		// An identifier cannot start with a number (or only be a number).
+		// Therefore, it is not possible to accidentally mistake one for another (except users do weird shit with their ini file manually).
+		if constexpr (detail::MagicEnumAvailable) {
+			auto str = ini.get<std::string_view>();
+			if (!str) {
+				return std::unexpected(str.error());
+			}
+			auto cast = magic_enum::enum_cast<E>(str.value());
+			if (cast) {
+				value = *cast;
+				return {};
+			}
+		}
+		auto num = ini.get<std::underlying_type_t<E>>();
+		if (!num) {
+			return std::unexpected(num.error());
+		}
+		value = static_cast<E>(num.value());
+		return {};
+		// return from_ini(ini, static_cast<int&>(value));
 	}
 
 	// TO_INI for STL
@@ -301,5 +363,17 @@ namespace modernIni {
 	requires std::is_integral_v<N> or std::is_floating_point_v<N>
 	void to_ini(Ini& ini, N value) {
 		ini = std::format("{}", value);
+	}
+
+
+	template<typename E>
+	requires std::is_enum_v<E>
+	void to_ini(Ini& ini, E value) {
+		constexpr auto type = detail::getEnumType<E>();
+		if constexpr (type == customize::IniEnumType::Underlying) {
+			ini = std::to_underlying(value);
+		} else if constexpr (type == customize::IniEnumType::MagicEnum) {
+			ini = magic_enum::enum_name(value);
+		}
 	}
 } // namespace modernIni

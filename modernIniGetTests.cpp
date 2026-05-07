@@ -280,3 +280,26 @@ TEST(ModernIniGetTests, GetToUnchangedOnError) {
 	ASSERT_EQ(t.error(), modernIni::Error::InvalidValue);
 	ASSERT_EQ(test, 42);
 }
+
+enum class TestEnumDefault {
+	Test1,
+	Test2,
+};
+TEST(ModernIniGetTests, EnumMagic) {
+	modernIni::Ini ini;
+	std::istringstream input("test = Test1\n");
+	input >> ini;
+
+	TestEnumDefault test;
+	ASSERT_TRUE(ini.at("test").value().get().get_to(test));
+	ASSERT_EQ(test, TestEnumDefault::Test1);
+}
+TEST(ModernIniGetTests, EnumNum) {
+	modernIni::Ini ini;
+	std::istringstream input("test = 1\n");
+	input >> ini;
+
+	TestEnumDefault test;
+	ASSERT_TRUE(ini.at("test").value().get().get_to(test));
+	ASSERT_EQ(test, TestEnumDefault::Test2);
+}
