@@ -1,7 +1,11 @@
 #include "modernIni.h"
 
-#include <string>
+#include <deque>
+#include <forward_list>
 #include <print>
+#include <string>
+#include <unordered_set>
+#include <valarray>
 
 #include <gtest/gtest.h>
 
@@ -176,4 +180,83 @@ TEST(ModernIniSetTests, SetOptionalEmpty) {
 	auto value = ini.at("key")->get().get<std::string_view>();
 	ASSERT_TRUE(value.has_value());
 	ASSERT_TRUE(value->empty());
+}
+
+TEST(ModernIniSetTests, SetVector) {
+	modernIni::Ini ini;
+	ini["key"] = std::vector<int>{1, 2, 3};
+
+	auto& key = ini.at("key").value().get();
+	ASSERT_EQ(key.getType(), modernIni::Type::Object);
+
+	auto& children = key.getChildren().value().get();
+	ASSERT_EQ(children.size(), 3);
+
+	ASSERT_EQ(children.at("0").get<int>(), 1);
+	ASSERT_EQ(children.at("1").get<int>(), 2);
+	ASSERT_EQ(children.at("2").get<int>(), 3);
+}
+
+void testMap(auto&& t) {
+	modernIni::Ini ini;
+	ini["key"] = t;
+
+	auto& key = ini.at("key").value().get();
+	ASSERT_EQ(key.getType(), modernIni::Type::Object);
+
+	auto& children = key.getChildren().value().get();
+	ASSERT_EQ(children.size(), 2);
+
+	ASSERT_EQ(children.at("a").get<std::string_view>(), "1");
+	ASSERT_EQ(children.at("b").get<std::string_view>(), "2");
+}
+
+TEST(ModernIniSetTest, SetMaps) {
+	testMap(std::map<std::string, int>{{"a", 1}, {"b", 2}});
+	testMap(std::unordered_map<std::string, int>{{"a", 1}, {"b", 2}});
+	testMap(std::multimap<std::string, int>{{"a", 1}, {"b", 2}});
+	testMap(std::unordered_multimap<std::string, int>{{"a", 1}, {"b", 2}});
+	testMap(std::array<std::pair<std::string, int>, 2>{{{"a", 1}, {"b", 2}}});
+
+	testMap(std::map<std::string, std::string>{{"a", "1"}, {"b", "2"}});
+
+	modernIni::Ini ini;
+	ini["key"] = std::map<int, int>{{1, 2}, {3, 4}};
+
+	auto& key = ini.at("key").value().get();
+	ASSERT_EQ(key.getType(), modernIni::Type::Object);
+
+	auto& children = key.getChildren().value().get();
+	ASSERT_EQ(children.size(), 2);
+
+	ASSERT_EQ(children.at("1").get<std::string_view>(), "2");
+	ASSERT_EQ(children.at("3").get<std::string_view>(), "4");
+}
+
+void testArray(auto&& t) {
+	modernIni::Ini ini;
+	ini["key"] = t;
+
+	auto& key = ini.at("key").value().get();
+	ASSERT_EQ(key.getType(), modernIni::Type::Object);
+
+	auto& children = key.getChildren().value().get();
+	ASSERT_EQ(children.size(), 2);
+
+	ASSERT_EQ(children.at("0").get<int>(), 1);
+	ASSERT_EQ(children.at("1").get<int>(), 2);
+}
+TEST(ModernIniSetTests, SetArrays) {
+	testArray(std::array{1, 2});
+	testArray(std::vector{1, 2});
+	testArray(std::deque{1, 2});
+	testArray(std::list{1, 2});
+	testArray(std::forward_list{1, 2});
+	testArray(std::set{1, 2});
+	testArray(std::multiset{1, 2});
+	testArray(std::unordered_set{1, 2});
+	testArray(std::valarray{1, 2});
+
+	std::array<int, 2> arr = {1, 2};
+	testArray(std::span(arr));
 }

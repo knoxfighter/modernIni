@@ -73,6 +73,33 @@ namespace modernIni {
 					return customize::IniEnumType::Default;
 			}
 		}
+
+		template<typename T>
+		concept PairLike =
+			requires { std::tuple_size<std::remove_cvref_t<T>>::value; } // This cannot be tuple_size_v, it causes a hard error
+			&& std::tuple_size_v<std::remove_reference_t<T>> == 2;
+
+		template<typename T>
+		concept KeyValueRange =
+			std::ranges::range<T>
+			&& PairLike<std::ranges::range_value_t<T>>;
+
+		template<typename T>
+		concept StringLike =
+			std::is_constructible_v<std::string, T>;
+
+		template<typename T>
+		concept Sequence =
+			std::ranges::range<std::remove_cvref_t<T>>
+			&& !StringLike<std::remove_cvref_t<T>>
+			&& !KeyValueRange<std::remove_cvref_t<T>>;
+
+		template<typename T>
+		concept MapInsert = requires (T map) {
+				typename T::key_type;
+				typename T::mapped_type;
+				map.insert({std::declval<typename T::key_type>(), std::declval<typename T::mapped_type>()});
+		};
 	}
 
 	class Ini {
@@ -217,9 +244,35 @@ namespace modernIni {
 			return std::unexpected(Error::KeyNotFound);
 		}
 
+		/**
+		 * Get the reference to a child of this Object, will fail if it is not an Object or if key does not exist.
+		 *
+		 * SAFETY: Even though value is called, the exception should never be thrown with enums and arithmetics (numbers)
+		 */
+		template<typename Self, typename T>
+		requires std::is_enum_v<T> or std::is_arithmetic_v<T>
+		[[nodiscard]] auto at(this Self&& self, T key) noexcept -> ReferenceResult<Self, Ini> {
+			Ini ini;
+			to_ini(ini, key);
+			return self.at(ini.get<std::string_view>().value());
+		}
+
 		[[nodiscard]] Result<void> erase(const std::string& key);
 		[[nodiscard]] Result<bool> contains(const std::string& key) const noexcept;
-		Ini& operator[](const std::string& key) noexcept;
+		Ini& operator[](std::string_view key) noexcept;
+
+		/**
+		 * Use the to_ini implementation to convert the key to a string and access the Ini object.
+		 *
+		 * SAFETY: Even though value is called, the exception should never be thrown with enums and arithmetics (numbers)
+		 **/
+		template<typename T>
+		requires std::is_enum_v<T> or std::is_arithmetic_v<T>
+		Ini& operator[](T key) noexcept {
+			Ini ini;
+			to_ini(ini, key);
+			return (*this)[ini.get<std::string_view>().value()];
+		}
 
 	private:
 		Type type = Type::Object;
@@ -376,9 +429,34 @@ namespace modernIni {
 		return {};
 	}
 
+	template<detail::MapInsert T>
+	[[nodiscard]] Result<void> from_ini(const Ini& ini, T& value) {
+		if (ini.getType() != Type::Object) {
+			return std::unexpected(Error::WrongType);
+		}
+		for (auto&& [key, iniVal] : ini) {
+			// convert key to K
+			Ini keyIni("", key, nullptr);
+			auto keyRes = keyIni.get<typename T::key_type>();
+			if (!keyRes) {
+				return std::unexpected(keyRes.error());
+			}
+
+			// convert value to V
+			auto valueRes = iniVal.get<typename T::mapped_type>();
+			if (!valueRes) {
+				return std::unexpected(valueRes.error());
+			}
+			// insert takes a pair(key, val)
+			value.insert({std::move(keyRes.value()), std::move(valueRes.value())});
+		}
+		return {};
+	}
+
 	// TO_INI for STL
 	// this serializes all int types, bool and floating points
 	void to_ini(Ini& ini, std::string_view value);
+
 	template<typename N>
 	requires std::is_integral_v<N> or std::is_floating_point_v<N>
 	void to_ini(Ini& ini, N value) {
@@ -398,11 +476,25 @@ namespace modernIni {
 	}
 
 	template<typename T>
-	void to_ini(Ini& ini, std::optional<T> value) {
+	void to_ini(Ini& ini, const std::optional<T>& value) {
 		if (value) {
 			ini = *value;
 		} else {
 			ini = "";
 		}
+	}
+
+	template<detail::KeyValueRange R>
+	void to_ini(Ini& ini, const R& value) {
+		ini.setType(Type::Object);
+
+		for (auto&& [key, val] : value) {
+			ini[key] = val;
+		}
+	}
+	template<detail::Sequence T>
+	requires (!detail::StringLike<T>)
+	void to_ini(Ini& ini, const T& arr) {
+		to_ini(ini, arr | std::views::enumerate);
 	}
 } // namespace modernIni

@@ -2,6 +2,7 @@
 #include "modernIniTestAccessor.h"
 
 #include <string>
+#include <flat_map>
 
 #include <gtest/gtest.h>
 
@@ -333,4 +334,47 @@ TEST(ModernIniGetTests, GetOptionalEmpty) {
 	auto value = ini.at("test").value().get().get<std::optional<int>>();
 	ASSERT_TRUE(value.has_value());
 	ASSERT_FALSE(value.value());
+}
+
+TEST(ModernIniGetTests, GetArrays) {
+	modernIni::Ini ini;
+	std::istringstream input("[test]\n 0 = 1\n1 = 2\n 2 = 3\n");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<std::vector<int>>();
+	ASSERT_TRUE(value.has_value());
+	auto& vector = value.value();
+	ASSERT_EQ(vector.size(), 3);
+	ASSERT_EQ(vector[0], 1);
+	ASSERT_EQ(vector[1], 2);
+	ASSERT_EQ(vector[2], 3);
+}
+
+enum class KeyEnum {
+	a,
+	b,
+	c,
+};
+template<typename T>
+void testMap() {
+	modernIni::Ini ini;
+	std::istringstream input("[test]\n a = 1\n b = 2\n c = 3\n");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<T>();
+	ASSERT_TRUE(value.has_value());
+	auto& map = value.value();
+	ASSERT_EQ(map.size(), 3);
+	ASSERT_EQ(map.find(KeyEnum::a)->second, 1);
+	ASSERT_EQ(map.find(KeyEnum::b)->second, 2);
+	ASSERT_EQ(map.find(KeyEnum::c)->second, 3);
+}
+TEST(ModernIniGetTests, GetMaps) {
+	testMap<std::map<KeyEnum, int>>();
+	testMap<std::unordered_map<KeyEnum, int>>();
+	testMap<std::flat_map<KeyEnum, int>>();
+
+	testMap<std::multimap<KeyEnum, int>>();
+	testMap<std::unordered_multimap<KeyEnum, int>>();
+	testMap<std::flat_multimap<KeyEnum, int>>();
 }

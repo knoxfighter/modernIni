@@ -147,11 +147,11 @@ modernIni::Result<bool> modernIni::Ini::contains(const std::string& key) const n
 	return std::get<ObjectStorage>(data).contains(key);
 }
 
-modernIni::Ini& modernIni::Ini::operator[](const std::string& key) noexcept {
+modernIni::Ini& modernIni::Ini::operator[](std::string_view key) noexcept {
 	setType(Type::Object);
 
-	Ini ini(key, this);
-	auto it = std::get<ObjectStorage>(data).insert_or_assign(key, std::move(ini));
+	Ini ini(std::string(key), this);
+	auto it = std::get<ObjectStorage>(data).insert_or_assign(std::string(key), std::move(ini));
 	return it.first->second;
 }
 
