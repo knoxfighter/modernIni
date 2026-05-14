@@ -382,6 +382,9 @@ namespace modernIni {
 		if (view.starts_with("-")) {
 			view.remove_prefix(1);
 			negative = true;
+			if constexpr (std::is_unsigned_v<N>) {
+				return std::unexpected(Error::InvalidValue);
+			}
 		}
 		if (view.starts_with("0x") || view.starts_with("0X")) {
 			base = 16;

@@ -139,23 +139,35 @@ TEST(ModernIniGetTests, GetInt) {
 	std::istringstream input("test = 42");
 	input >> ini;
 
-	testGet(ini, "test", 42);
-	testGetTo(ini, "test", 42);
+	testGet(ini, "test", static_cast<int8_t>(42));
+	testGetTo(ini, "test", static_cast<int8_t>(42));
 
-	testGet(ini, "test", 42ull);
-	testGetTo(ini, "test", 42ull);
+	testGet(ini, "test", static_cast<int16_t>(42));
+	testGetTo(ini, "test", static_cast<int16_t>(42));
 
-	testGet(ini, "test", 42ll);
-	testGetTo(ini, "test", 42ll);
+	testGet(ini, "test", static_cast<int32_t>(42));
+	testGetTo(ini, "test", static_cast<int32_t>(42));
 
-	testGet(ini, "test", 42u);
-	testGetTo(ini, "test", 42u);
+	testGet(ini, "test", static_cast<int64_t>(42));
+	testGetTo(ini, "test", static_cast<int64_t>(42));
 
-	testGet(ini, "test", 42ul);
-	testGetTo(ini, "test", 42ul);
+	testGet(ini, "test", static_cast<uint8_t>(42));
+	testGetTo(ini, "test", static_cast<uint8_t>(42));
 
-	testGet(ini, "test", 42l);
-	testGetTo(ini, "test", 42l);
+	testGet(ini, "test", static_cast<uint16_t>(42));
+	testGetTo(ini, "test", static_cast<uint16_t>(42));
+
+	testGet(ini, "test", static_cast<uint32_t>(42));
+	testGetTo(ini, "test", static_cast<uint32_t>(42));
+
+	testGet(ini, "test", static_cast<uint64_t>(42));
+	testGetTo(ini, "test", static_cast<uint64_t>(42));
+
+	testGet(ini, "test", static_cast<float>(42));
+	testGetTo(ini, "test", static_cast<float>(42));
+
+	testGet(ini, "test", static_cast<double>(42));
+	testGetTo(ini, "test", static_cast<double>(42));
 }
 
 TEST(ModernIniGetTests, GetIntNegative) {
@@ -166,8 +178,8 @@ TEST(ModernIniGetTests, GetIntNegative) {
 	testGet(ini, "test", -42);
 	testGetTo(ini, "test", -42);
 
-	testGet(ini, "test", static_cast<uint32_t>(-42));
-	testGetTo(ini, "test", static_cast<uint32_t>(-42));
+	testGet<uint32_t>(ini, "test", modernIni::Error::InvalidValue);
+	testGetTo<uint32_t>(ini, "test", modernIni::Error::InvalidValue);
 }
 
 TEST(ModernIniGetTests, GetIntTypes) {
@@ -239,6 +251,10 @@ TEST(ModernIniGetTests, GetFloat) {
 	// double negative
 	testGet(ini, "test2", -42.5);
 	testGetTo(ini, "test2", -42.5);
+
+	// as int
+	testGet(ini, "test", static_cast<int>(42));
+	testGetTo(ini, "test", static_cast<int>(42));
 }
 
 TEST(ModernIniGetTests, GetFloatSpecialValues) {
