@@ -94,12 +94,52 @@ namespace modernIni {
 			&& !StringLike<std::remove_cvref_t<T>>
 			&& !KeyValueRange<std::remove_cvref_t<T>>;
 
-		template<typename T>
-		concept MapInsert = requires (T map) {
-				typename T::key_type;
-				typename T::mapped_type;
-				map.insert({std::declval<typename T::key_type>(), std::declval<typename T::mapped_type>()});
+		template<typename C, typename T>
+		concept HasPushBack = requires(C c, T t) {
+				c.push_back(t);
 		};
+		template<typename C, typename T>
+		concept HasPushFront = requires(C c, T t) {
+			c.push_front(t);
+		} && !HasPushBack<C, T>;
+		template<typename C, typename T>
+		concept HasInsert = requires(C c, T t) {
+			c.insert(t);
+		};
+		template<typename C, typename T>
+		concept HasPush = requires(C c, T t) {
+			c.push(t);
+		};
+		template<typename T>
+		concept MapLike = requires {
+			typename T::key_type;
+			typename T::mapped_type;
+		};
+		template<typename T>
+		concept SetLike = requires {
+			typename T::value_type;
+		} && !MapLike<T>;
+
+		template<typename C, typename T>
+		requires HasPushBack<C, T>
+		void RunInsert(C& c, T&& t) {
+			c.push_back(std::forward<T>(t));
+		}
+		template<typename C, typename T>
+		requires HasPushFront<C, T>
+		void RunInsert(C& c, T&& t) {
+			c.push_front(std::forward<T>(t));
+		}
+		template<typename C, typename T>
+		requires HasInsert<C, T>
+		void RunInsert(C& c, T&& t) {
+			c.insert(std::forward<T>(t));
+		}
+		template<typename C, typename T>
+		requires HasPush<C, T>
+		void RunInsert(C& c, T&& t) {
+			c.push(std::forward<T>(t));
+		}
 	}
 
 	class Ini {
@@ -429,7 +469,7 @@ namespace modernIni {
 		return {};
 	}
 
-	template<detail::MapInsert T>
+	template<detail::MapLike T>
 	[[nodiscard]] Result<void> from_ini(const Ini& ini, T& value) {
 		if (ini.getType() != Type::Object) {
 			return std::unexpected(Error::WrongType);
@@ -448,9 +488,42 @@ namespace modernIni {
 				return std::unexpected(valueRes.error());
 			}
 			// insert takes a pair(key, val)
-			value.insert({std::move(keyRes.value()), std::move(valueRes.value())});
+			detail::RunInsert(value, std::make_pair(std::move(keyRes.value()), std::move(valueRes.value())));
 		}
 		return {};
+	}
+
+	template<detail::SetLike T>
+	[[nodiscard]] Result<void> from_ini(const Ini& ini, T& value) {
+		if (ini.getType() != Type::Object) {
+			return std::unexpected(Error::WrongType);
+		}
+
+		for (auto&& val : ini | std::views::values) {
+			auto getValue = val.get<typename T::value_type>();
+			if (!getValue) {
+				return std::unexpected(getValue.error());
+			}
+			detail::RunInsert(value, std::move(getValue.value()));
+		}
+		return {};
+	}
+
+	template<typename T, std::size_t Size>
+	[[nodiscard]] Result<void> from_ini(const Ini& ini, std::array<T, Size>& value) {
+		if (ini.getType() != Type::Object) {
+			return std::unexpected(Error::WrongType);
+		}
+		Result<void> res = {};
+		for (auto&& [i, val] : ini | std::views::values | std::views::take(Size) | std::views::enumerate) {
+			auto getValue = val.get<T>();
+			if (!getValue && getValue.has_value()) {
+				res = std::unexpected(getValue.error());
+				continue;
+			}
+			value[i] = std::move(getValue.value());
+		}
+		return res;
 	}
 
 	// TO_INI for STL

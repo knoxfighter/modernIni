@@ -1,8 +1,12 @@
 #include "modernIni.h"
 #include "modernIniTestAccessor.h"
 
-#include <string>
+#include <deque>
 #include <flat_map>
+#include <flat_set>
+#include <forward_list>
+#include <stack>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -336,18 +340,76 @@ TEST(ModernIniGetTests, GetOptionalEmpty) {
 	ASSERT_FALSE(value.value());
 }
 
-TEST(ModernIniGetTests, GetArrays) {
+TEST(ModernIniGetTests, GetVectors) {
+	auto testArray = []<typename T>() {
+		modernIni::Ini ini;
+		std::istringstream input("[test]\n 0 = 0\n1 = 1\n 2 = 2\n");
+		input >> ini;
+
+		auto value = ini.at("test").value().get().get<T>();
+		ASSERT_TRUE(value.has_value());
+		auto& vector = value.value();
+		ASSERT_EQ(vector.size(), 3);
+		for (auto&& [e, v] : vector | std::views::enumerate) {
+			ASSERT_EQ(e, v);
+		}
+	};
+	testArray.operator()<std::vector<int>>();
+	testArray.operator()<std::deque<int>>();
+	testArray.operator()<std::list<int>>();
+	testArray.operator()<std::set<int>>();
+	testArray.operator()<std::multiset<int>>();
+	testArray.operator()<std::flat_set<int>>();
+	testArray.operator()<std::flat_multiset<int>>();
+}
+
+TEST(ModernIniGetTests, GetForwardList) {
 	modernIni::Ini ini;
-	std::istringstream input("[test]\n 0 = 1\n1 = 2\n 2 = 3\n");
+	std::istringstream input("[test]\n 0 = 0\n1 = 1\n 2 = 2\n");
 	input >> ini;
 
-	auto value = ini.at("test").value().get().get<std::vector<int>>();
+	auto value = ini.at("test").value().get().get<std::forward_list<int>>();
 	ASSERT_TRUE(value.has_value());
 	auto& vector = value.value();
-	ASSERT_EQ(vector.size(), 3);
-	ASSERT_EQ(vector[0], 1);
-	ASSERT_EQ(vector[1], 2);
-	ASSERT_EQ(vector[2], 3);
+	vector.reverse();
+	for (auto&& [e, v] : vector | std::views::enumerate) {
+		ASSERT_EQ(e, v);
+	}
+}
+
+TEST(ModernIniGetTests, GetStack) {
+	modernIni::Ini ini;
+	std::istringstream input("[test]\n 0 = 0\n1 = 1\n 2 = 2\n");
+	input >> ini;
+
+	auto value = ini.at("test").value().get().get<std::stack<int>>();
+	ASSERT_TRUE(value.has_value());
+	auto& vector = value.value();
+	for (auto i = vector.top(), j = 2; !vector.empty(), i = vector.top(); --j) {
+		vector.pop();
+		ASSERT_EQ(i, j);
+	}
+}
+
+TEST(ModernIniGetTests, GetArray) {
+	auto testArray = []<typename T>(const std::string& str, std::size_t max = -1) {
+		modernIni::Ini ini;
+		std::istringstream input(str);
+		input >> ini;
+
+		auto value = ini.at("test").value().get().get<T>();
+		ASSERT_TRUE(value.has_value());
+		auto& vector = value.value();
+		for (auto&& [e, v] : vector | std::views::enumerate) {
+			if (e >= max)
+				break;
+			ASSERT_EQ(e, v);
+		}
+	};
+
+	testArray.operator()<std::array<int, 3>>("[test]\n 0 = 0\n1 = 1\n 2 = 2\n");
+	testArray.operator()<std::array<int, 2>>("[test]\n 0 = 0\n1 = 1\n 2 = 2\n");
+	testArray.operator()<std::array<int, 4>>("[test]\n 0 = 0\n1 = 1\n 2 = 2\n", 3);
 }
 
 enum class KeyEnum {
