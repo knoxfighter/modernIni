@@ -40,6 +40,7 @@ target_sources(${PROJECT_NAME}
 		FILE_SET HEADERS
 		FILES
 		modernIni.h
+		modernIniMacros.h
 )
 
 target_sources(${PROJECT_NAME}
@@ -91,6 +92,7 @@ if (BUILD_TESTS)
 			modernIniSerializationTests.cpp
 			modernIniGetTests.cpp
 			modernIniSetTests.cpp
+			modernIniTypeTests.cpp
 	)
 	target_compile_features(${PROJECT_NAME}Tests PUBLIC cxx_std_23)
 	target_compile_definitions(${PROJECT_NAME}Tests PRIVATE TESTS)

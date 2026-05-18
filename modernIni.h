@@ -398,8 +398,9 @@ namespace modernIni {
 		}
 
 		auto res = std::from_chars(view.data(), view.data() + view.size(), value, base);
-		value = negative ? -value : value;
 		if (res.ec == std::errc{}) {
+			// only convert to negative if parsing was success
+			value = negative ? -value : value;
 			return {};
 		}
 		return std::unexpected(Error::InvalidValue);
