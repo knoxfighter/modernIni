@@ -9,10 +9,15 @@ FetchContent_MakeAvailable(my-vcpkg-triplets)
 
 list(APPEND VCPKG_OVERLAY_TRIPLETS "${my-vcpkg-triplets_SOURCE_DIR}")
 
-project(modernIni CXX)
-
 option(BUILD_TESTS "Build the GTest executable" OFF)
 option(MAGIC_ENUM "Use magic-enum for enum names" OFF)
+
+# add tests as feature, so gtest is added
+if(BUILD_TESTS)
+	list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
+project(modernIni CXX)
 
 add_library(${PROJECT_NAME} STATIC)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})

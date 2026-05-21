@@ -1,15 +1,19 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
   "name": "modern-ini",
-  "version-string": "1.3.0",
-  "dependencies": [
-    "gtest"
-  ],
+  "version-string": "2.0.0",
+  "dependencies": [],
   "features": {
     "magic-enum": {
       "description": "Use magic-enum for enum names",
       "dependencies": [
         "magic-enum"
+      ]
+    },
+    "tests": {
+      "description": "Build the GTest executable",
+      "dependencies": [
+        "gtest"
       ]
     }
   },
