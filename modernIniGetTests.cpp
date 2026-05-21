@@ -401,7 +401,7 @@ TEST(ModernIniGetTests, GetStack) {
 	auto value = ini.at("test").value().get().get<std::stack<int>>();
 	ASSERT_TRUE(value.has_value());
 	auto& vector = value.value();
-	for (auto i = vector.top(), j = 2; !vector.empty(), i = vector.top(); --j) {
+	for (auto i = vector.top(), j = 2; (i = vector.top()); --j) {
 		vector.pop();
 		ASSERT_EQ(i, j);
 	}

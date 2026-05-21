@@ -21,6 +21,11 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_property(TARGET ${PROJECT_NAME} PROPERTY
 		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+# Use '/Zc:preprocessor' for MSVC, cause microsoft doesn't want to follow C++ standards...
+if (MSVC)
+	target_compile_options(${PROJECT_NAME} INTERFACE "/Zc:preprocessor")
+endif ()
+
 target_include_directories(
 		${PROJECT_NAME}
 		INTERFACE
