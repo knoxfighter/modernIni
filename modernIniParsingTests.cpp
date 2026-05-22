@@ -2,6 +2,10 @@
 #include "modernIniTestAccessor.h"
 
 #include <gtest/gtest.h>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <type_traits>
 
 TEST(ModernIniParsingTests, ParseSimple) {
 	modernIni::Ini ini;

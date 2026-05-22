@@ -1,7 +1,8 @@
 #include "modernIni.h"
 
 #include <algorithm>
-#include <filesystem>
+#include <cctype>
+#include <functional>
 #include <ranges>
 
 void trim(std::string_view& sv) {

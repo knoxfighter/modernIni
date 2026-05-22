@@ -1,19 +1,28 @@
 #pragma once
 
-#include <algorithm>
+#include <array>
+#include <charconv>
+#include <cstddef>
 #include <expected>
+#include <format>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <ranges>
 #include <string>
+#include <string_view>
+#include <system_error>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
 
 #if __has_include(<magic_enum/magic_enum.hpp>)
 #include <magic_enum/magic_enum.hpp>
 #endif
 
 #ifdef TESTS
-#include <gtest/gtest.h>
-
 class ModernIniTestAccessor;
 #endif
 

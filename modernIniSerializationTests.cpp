@@ -2,6 +2,10 @@
 #include "modernIniTestAccessor.h"
 
 #include <gtest/gtest.h>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
 
 TEST(ModernIniSerializationTests, SerializeSimple) {
 	modernIni::Ini ini;

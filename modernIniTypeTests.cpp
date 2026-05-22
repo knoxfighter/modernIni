@@ -1,6 +1,11 @@
-#include <gtest/gtest.h>
-
 #include "modernIniMacros.h"
+#include "modernIni.h"
+
+#include <gtest/gtest.h>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <type_traits>
 
 class ServerConfig {
 	MODERN_INI_DEFINE_TYPE_INTRUSIVE(ServerConfig, host, port, tls);

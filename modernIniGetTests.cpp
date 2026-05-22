@@ -1,12 +1,29 @@
 #include "modernIni.h"
 #include "modernIniTestAccessor.h"
 
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <deque>
+#include <expected>
 #include <flat_map>
 #include <flat_set>
 #include <forward_list>
+#include <limits>
+#include <list>
+#include <map>
+#include <optional>
+#include <ranges>
+#include <set>
+#include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 
