@@ -9,11 +9,11 @@ FetchContent_MakeAvailable(my-vcpkg-triplets)
 
 list(APPEND VCPKG_OVERLAY_TRIPLETS "${my-vcpkg-triplets_SOURCE_DIR}")
 
-option(BUILD_TESTS "Build the GTest executable" OFF)
-option(MAGIC_ENUM "Use magic-enum for enum names" OFF)
+option(MODERNINI_BUILD_TESTS "Build the GTest executable" OFF)
+option(MODERNINI_MAGIC_ENUM "Use magic-enum for enum names" OFF)
 
 # add tests as feature, so gtest is added
-if(BUILD_TESTS)
+if(MODERNINI_BUILD_TESTS)
 	list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif()
 
@@ -38,12 +38,6 @@ target_include_directories(
 		$<INSTALL_INTERFACE:include>
 )
 
-target_compile_definitions(
-		${PROJECT_NAME}
-		PUBLIC
-		NOMINMAX
-)
-
 # add general sources
 target_sources(${PROJECT_NAME}
 		PUBLIC
@@ -60,7 +54,7 @@ target_sources(${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 
-if (MAGIC_ENUM)
+if (MODERNINI_MAGIC_ENUM)
 	find_package(magic_enum CONFIG REQUIRED)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE MAGIC_ENUM)
 	target_link_libraries(${PROJECT_NAME} PUBLIC magic_enum::magic_enum)
@@ -89,7 +83,7 @@ install(EXPORT modernIniTargets
 		DESTINATION share/${PROJECT_NAME}
 )
 
-if (BUILD_TESTS)
+if (MODERNINI_BUILD_TESTS)
 	target_compile_definitions(${PROJECT_NAME} PRIVATE TESTS)
 	target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest)
 

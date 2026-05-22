@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
   "name": "modern-ini",
-  "version-string": "2.0.0",
+  "version-string": "1.0.0",
   "dependencies": [],
   "features": {
     "magic-enum": {

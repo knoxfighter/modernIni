@@ -8,8 +8,8 @@
       "binaryDir": "${sourceDir}/cmake-build/${presetName}",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "BUILD_TESTS": "ON",
-        "MAGIC_ENUM": "ON"
+        "MODERNINI_BUILD_TESTS": "ON",
+        "MODERNINI_MAGIC_ENUM": "ON"
       },
       "hidden": true
     },
