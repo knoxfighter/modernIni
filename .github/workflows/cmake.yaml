@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ windows-latest ]
+        os: [ windows-2025-vs2026 ]
         presets: [ release-windows-clang, release-windows ]
     runs-on: ${{ matrix.os }}
     steps:
