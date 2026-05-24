@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 4.1)
 
-include(FetchContent)
-FetchContent_Declare(my-vcpkg-triplets
-		GIT_REPOSITORY "https://github.com/Zinn-o-Matics/my-vcpkg-triplets.git"
-		GIT_TAG "master"
-)
-FetchContent_MakeAvailable(my-vcpkg-triplets)
+# only download additional triplets, if we dont run via vcpkg.
+if (NOT FETCHCONTENT_FULLY_DISCONNECTED)
+	include(FetchContent)
+	FetchContent_Declare(my-vcpkg-triplets
+			GIT_REPOSITORY "https://github.com/Zinn-o-Matics/my-vcpkg-triplets.git"
+			GIT_TAG "master"
+	)
+	FetchContent_MakeAvailable(my-vcpkg-triplets)
 
-list(APPEND VCPKG_OVERLAY_TRIPLETS "${my-vcpkg-triplets_SOURCE_DIR}")
+	list(APPEND VCPKG_OVERLAY_TRIPLETS "${my-vcpkg-triplets_SOURCE_DIR}")
+endif ()
 
 option(MODERNINI_BUILD_TESTS "Build the GTest executable" OFF)
 option(MODERNINI_MAGIC_ENUM "Use magic-enum for enum names" OFF)
@@ -27,6 +30,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY
 		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Use '/Zc:preprocessor' for MSVC, cause microsoft doesn't want to follow C++ standards...
+# This enables __VA_OPT__
 if (MSVC)
 	target_compile_options(${PROJECT_NAME} INTERFACE "/Zc:preprocessor")
 endif ()
