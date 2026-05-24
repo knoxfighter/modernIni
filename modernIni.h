@@ -340,7 +340,9 @@ namespace modernIni {
 		friend Result<void> from_ini(const Ini& ini, std::string_view& value);
 		friend void to_ini(Ini& ini, std::string_view value);
 
+#ifdef TESTS
 		friend class ::ModernIniTestAccessor;
+#endif
 	};
 
 	/**
