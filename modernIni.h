@@ -201,9 +201,15 @@ namespace modernIni {
 
 		template<typename C>
 		Ini& operator=(C&& val) {
+			this->clear();
 			to_ini(*this, std::forward<C>(val));
 
 			return *this;
+		}
+
+		template<typename C>
+		explicit Ini(C&& val) {
+			to_ini(*this, std::forward<C>(val));
 		}
 
 		/**
@@ -250,7 +256,7 @@ namespace modernIni {
 				case Type::Object:
 					return std::get<ObjectStorage>(data).begin();
 				default:
-					return std::map<std::string, Ini>::iterator();
+					return ObjectStorage::iterator();
 			}
 		}
 		auto end() noexcept {
@@ -258,7 +264,7 @@ namespace modernIni {
 				case Type::Object:
 					return std::get<ObjectStorage>(data).end();
 				default:
-					return std::map<std::string, Ini>::iterator();
+					return ObjectStorage::iterator();
 			}
 		}
 		auto begin() const noexcept {
@@ -266,7 +272,7 @@ namespace modernIni {
 				case Type::Object:
 					return std::get<ObjectStorage>(data).begin();
 				default:
-					return std::map<std::string, Ini>::const_iterator();
+					return ObjectStorage::const_iterator();
 			}
 		}
 		auto end() const noexcept {
@@ -274,7 +280,7 @@ namespace modernIni {
 				case Type::Object:
 					return std::get<ObjectStorage>(data).end();
 				default:
-					return std::map<std::string, Ini>::const_iterator();
+					return ObjectStorage::const_iterator();
 			}
 		}
 
@@ -309,6 +315,8 @@ namespace modernIni {
 		[[nodiscard]] Result<void> erase(const std::string& key);
 		[[nodiscard]] Result<bool> contains(const std::string& key) const noexcept;
 		Ini& operator[](std::string_view key) noexcept;
+
+		void clear() noexcept;
 
 		/**
 		 * Use the to_ini implementation to convert the key to a string and access the Ini object.

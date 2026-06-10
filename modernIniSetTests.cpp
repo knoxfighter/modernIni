@@ -227,6 +227,7 @@ TEST(ModernIniSetTest, SetMaps) {
 	testMap(std::multimap<std::string, int>{{"a", 1}, {"b", 2}});
 	testMap(std::unordered_multimap<std::string, int>{{"a", 1}, {"b", 2}});
 	testMap(std::array<std::pair<std::string, int>, 2>{{{"a", 1}, {"b", 2}}});
+	testMap(std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}});
 
 	testMap(std::map<std::string, std::string>{{"a", "1"}, {"b", "2"}});
 
@@ -269,4 +270,17 @@ TEST(ModernIniSetTests, SetArrays) {
 
 	std::array<int, 2> arr = {1, 2};
 	testArray(std::span(arr));
+}
+
+TEST(ModernIniSetTests, SetConstruct) {
+	modernIni::Ini ini(5);
+	ASSERT_EQ(ini.getType(), modernIni::Type::Value);
+	ASSERT_EQ(ini.get<int>().value(), 5);
+
+	std::array<int, 2> arr = {1, 2};
+	modernIni::Ini ini2(arr);
+	ASSERT_EQ(ini2.getType(), modernIni::Type::Object);
+	ASSERT_EQ(ini2.getChildren().value().get().size(), 2);
+	ASSERT_EQ(ini2.getChildren().value().get().at("0").get<int>(), 1);
+	ASSERT_EQ(ini2.getChildren().value().get().at("1").get<int>(), 2);
 }

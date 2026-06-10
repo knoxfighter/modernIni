@@ -156,6 +156,14 @@ modernIni::Ini& modernIni::Ini::operator[](std::string_view key) noexcept {
 	return it.first->second;
 }
 
+void modernIni::Ini::clear() noexcept {
+	if (type == Type::Object) {
+		std::get<ObjectStorage>(data).clear();
+	} else if (type == Type::Value) {
+		std::get<ValueStorage>(data).clear();
+	}
+}
+
 void modernIni::Ini::setType(Type t) noexcept {
 	// do nothing if already of the correct type
 	if (type == t) {
