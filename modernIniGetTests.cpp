@@ -343,6 +343,22 @@ TEST(ModernIniGetTests, EnumNum) {
 	ASSERT_EQ(test, TestEnumDefault::Test2);
 }
 
+TEST(ModernIniGetTests, MapUnknownKey) {
+	modernIni::Ini ini;
+	std::istringstream input("Test1 = 1\nTest2 = 2\nTest10 = 10\nTest11 = 11\n");
+	input >> ini;
+
+	std::unordered_map<TestEnumDefault, uint32_t> defaultMap;
+
+	std::unordered_map<TestEnumDefault, uint32_t> expectedMap;
+	expectedMap[TestEnumDefault::Test1] = 1;
+	expectedMap[TestEnumDefault::Test2] = 2;
+
+	auto res = ini.get_to(defaultMap);
+	ASSERT_FALSE(res);
+	ASSERT_EQ(res.error(), modernIni::Error::InvalidValue);
+}
+
 TEST(ModernIniGetTests, Char) {
 	modernIni::Ini ini;
 	std::istringstream input("test = a\n");
