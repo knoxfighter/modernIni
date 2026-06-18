@@ -31,7 +31,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY
 
 # Use '/Zc:preprocessor' for MSVC, cause microsoft doesn't want to follow C++ standards...
 # This enables __VA_OPT__
-if (MSVC)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	target_compile_options(${PROJECT_NAME} INTERFACE "/Zc:preprocessor")
 endif ()
 
