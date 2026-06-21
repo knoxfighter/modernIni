@@ -1,4 +1,5 @@
 #include "modernIni.h"
+#include "modernIniMacros.h"
 #include "modernIniTestAccessor.h"
 
 #include <array>
@@ -375,8 +376,8 @@ TEST(ModernIniGetTests, GetOptionalValue) {
 	input >> ini;
 
 	auto value = ini.at("test").value().get().get<std::optional<int>>();
-	ASSERT_TRUE(value.has_value());
-	ASSERT_EQ(value.value(), 42);
+	ASSERT_TRUE(value.value().has_value());
+	ASSERT_EQ(value.value().value(), 42);
 }
 
 TEST(ModernIniGetTests, GetOptionalEmpty) {
@@ -385,8 +386,23 @@ TEST(ModernIniGetTests, GetOptionalEmpty) {
 	input >> ini;
 
 	auto value = ini.at("test").value().get().get<std::optional<int>>();
-	ASSERT_TRUE(value.has_value());
-	ASSERT_FALSE(value.value());
+	ASSERT_FALSE(value.value().has_value());
+}
+
+struct OptionalTest {
+	int x;
+	int y;
+	MODERN_INI_DEFINE_TYPE_INTRUSIVE(OptionalTest, x, y);
+};
+TEST(ModernIniGetTests, GetOptionalObject) {
+	modernIni::Ini ini;
+	std::istringstream input("[key]\nx = 5\ny = 5\n");
+	input >> ini;
+
+	auto value = ini.at("key").value().get().get<std::optional<OptionalTest>>();
+	ASSERT_TRUE(value.value().has_value());
+	ASSERT_EQ(value.value().value().x, 5);
+	ASSERT_EQ(value.value().value().y, 5);
 }
 
 TEST(ModernIniGetTests, GetVectors) {

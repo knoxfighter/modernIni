@@ -476,14 +476,20 @@ namespace modernIni {
 
 	template<typename T>
 	[[nodiscard]] Result<void> from_ini(const Ini& ini, std::optional<T>& value) {
-		auto str = ini.get<std::string_view>();
-		if (!str) {
-			return std::unexpected(str.error());
+		// Check if nullopt/empty when this is a value.
+		// If this is an object, we can directly skip to parsing.
+		if (ini.getType() == Type::Value) {
+			auto str = ini.get<std::string_view>();
+			if (!str) {
+				return std::unexpected(str.error());
+			}
+
+			if (str.value().empty()) {
+				value = std::nullopt;
+				return {};
+			}
 		}
-		if (str.value().empty()) {
-			value = std::nullopt;
-			return {};
-		}
+
 		auto getT = ini.get<T>();
 		if (!getT) {
 			return std::unexpected(getT.error());

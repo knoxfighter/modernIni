@@ -1,4 +1,5 @@
 #include "modernIni.h"
+#include "modernIniMacros.h"
 
 #include <array>
 #include <deque>
@@ -10,6 +11,7 @@
 #include <optional>
 #include <set>
 #include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -190,6 +192,29 @@ TEST(ModernIniSetTests, SetOptionalEmpty) {
 	auto value = ini.at("key")->get().get<std::string_view>();
 	ASSERT_TRUE(value.has_value());
 	ASSERT_TRUE(value->empty());
+}
+
+struct OptionalTest {
+	int x;
+	int y;
+	MODERN_INI_DEFINE_TYPE_INTRUSIVE(OptionalTest, x, y);
+};
+TEST(ModernIniSetTests, SetOptionalObject) {
+	modernIni::Ini ini;
+
+	std::optional<OptionalTest> test(std::in_place, 5, 5);
+	ini["key"] = test;
+
+	auto& key = ini.at("key").value().get();
+	ASSERT_EQ(key.getType(), modernIni::Type::Object);
+	ASSERT_EQ(key.getChildren().value().get().size(), 2);
+	ASSERT_EQ(key.getChildren().value().get().at("x").get<int>(), 5);
+	ASSERT_EQ(key.getChildren().value().get().at("y").get<int>(), 5);
+
+	std::ostringstream oss;
+	oss << ini;
+	auto str = oss.str();
+	ASSERT_EQ(str, "\n[key]\nx = 5\ny = 5\n");
 }
 
 TEST(ModernIniSetTests, SetVector) {
